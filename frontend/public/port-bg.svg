@@ -1,0 +1,23 @@
+<svg width="1600" height="1000" viewBox="0 0 1600 1000" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1600" height="1000" fill="#EEF2F7"/>
+  <g opacity=".29" stroke="#C9D1DA" stroke-width="8">
+    <path d="M85 514V278M224 514V181M81 285H236M85 294L224 507M224 190L178 515"/>
+    <path d="M1117 514V175M1308 514V92M1111 182H1321M1117 190L1308 507M1308 99L1255 514"/>
+    <path d="M1371 514V224M1544 514V129M1364 231H1554M1371 238L1544 507M1544 136L1498 514"/>
+  </g>
+  <g opacity=".22" fill="#C6CFD9">
+    <rect y="521" width="1600" height="42"/>
+    <rect x="0" y="588" width="1600" height="10"/>
+    <rect x="90" y="611" width="220" height="89"/>
+    <rect x="331" y="638" width="184" height="62"/>
+    <rect x="550" y="602" width="292" height="98"/>
+    <rect x="875" y="620" width="202" height="80"/>
+    <rect x="1110" y="596" width="296" height="104"/>
+    <rect x="1431" y="642" width="169" height="58"/>
+    <rect y="706" width="1600" height="15"/>
+  </g>
+  <g opacity=".2" stroke="#CCD5DE" stroke-width="9">
+    <path d="M240 736H1371"/>
+    <path d="M284 742L176 927M526 742L418 927M761 742L653 927M1006 742L898 927M1247 742L1139 927"/>
+  </g>
+</svg>

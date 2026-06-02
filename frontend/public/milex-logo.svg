@@ -1,0 +1,47 @@
+<svg width="330" height="190" viewBox="0 0 330 190" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <g transform="translate(126 -1) scale(1.15)">
+    <path d="M34 0L62 17L34 35L6 17L34 0Z" fill="#20AF70"/>
+    <path d="M3 23L31 41V78L3 60V23Z" fill="#20AF70"/>
+    <path d="M65 23L37 41V78L65 60V23Z" fill="#078B4D"/>
+    <path d="M34 35L6 17L13 12L34 25L55 12L62 17L34 35Z" fill="white"/>
+    <path d="M31 41L3 23V33L31 51V41Z" fill="white"/>
+    <path d="M37 41L65 23V33L37 51V41Z" fill="white"/>
+  </g>
+
+  <text
+    x="14"
+    y="148"
+    fill="#606B70"
+    font-family="Arial Black, Arial, sans-serif"
+    font-size="72"
+    font-style="italic"
+    font-weight="900"
+    letter-spacing="-8"
+    textLength="225"
+    lengthAdjust="spacingAndGlyphs"
+  >MILE</text>
+
+  <path d="M219 105H244L258 122L277 105H303L271 135L292 163H267L253 145L233 163H207L240 132L219 105Z" fill="#09A45C"/>
+
+  <text
+    x="287"
+    y="101"
+    fill="#657076"
+    font-family="Arial Black, Arial, sans-serif"
+    font-size="14"
+    font-style="italic"
+    font-weight="900"
+  >AIR</text>
+
+  <text
+    x="16"
+    y="184"
+    fill="#657076"
+    font-family="Arial Black, Arial, sans-serif"
+    font-size="17"
+    font-style="italic"
+    font-weight="900"
+    textLength="235"
+    lengthAdjust="spacingAndGlyphs"
+  >With You Every Mile</text>
+</svg>
