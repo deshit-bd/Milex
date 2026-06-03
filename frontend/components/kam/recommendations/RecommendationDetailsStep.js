@@ -16,7 +16,7 @@ export default function RecommendationDetailsStep({ form, onChange, onSave, onPr
             required
           />
         </label>
-        <p className="note-help">Provide a comprehensive summary for the Sales Coordinator. Minimum 50 words.</p>
+        <p className="note-help">Provide a summary for the Sales Coordinator.</p>
       </div>
       <div className="form-actions details-actions">
         <button className="outline-action" type="button" onClick={onPrevious}><FiArrowLeft /> Previous Step</button>

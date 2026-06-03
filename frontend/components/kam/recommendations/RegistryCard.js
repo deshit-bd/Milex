@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { FiCalendar, FiUser } from "react-icons/fi";
 
-export default function RegistryCard() {
+export default function RegistryCard({ customerCode }) {
   const [createdDate, setCreatedDate] = useState("");
 
   useEffect(() => {
@@ -23,10 +23,10 @@ export default function RegistryCard() {
         <span>Status: Draft</span>
       </div>
       <p>CUSTOMER CODE</p>
-      <strong>MLX25DHK001</strong>
+      <strong>{customerCode || "Generating..."}</strong>
       <div className="registry-divider" />
       <p>SCANNABLE IDENTITY</p>
-      <div className="barcode" aria-label="Barcode MLX25DHK001" />
+      <div className="barcode" aria-label={customerCode ? `Barcode ${customerCode}` : "Pending barcode"} />
       <div className="registry-divider" />
       <p>CREATED BY</p>
       <div className="registry-meta"><FiUser /> <span>KAM User</span></div>

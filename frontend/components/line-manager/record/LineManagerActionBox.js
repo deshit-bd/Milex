@@ -1,13 +1,15 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { FiCheckCircle, FiDownload, FiXCircle } from "react-icons/fi";
 import Swal from "sweetalert2";
-import { LINE_MANAGER_APPROVAL_KEY, RATE_ACTION_KEY } from "@/components/sales/record/recordData";
+import { updateRecordStatusOnServer } from "@/lib/database";
 
-export default function LineManagerActionBox({ record }) {
+export default function LineManagerActionBox({ record, onDecision }) {
+  const router = useRouter();
   const [note, setNote] = useState("");
-  const rateAction = typeof window !== "undefined" ? JSON.parse(localStorage.getItem(RATE_ACTION_KEY) || "{}") : {};
+  const rateAction = record.rateAction || {};
   const rateReference = `REF-${rateAction.identifier || record.identifier}`;
 
   function downloadRate() {
@@ -20,14 +22,38 @@ export default function LineManagerActionBox({ record }) {
     URL.revokeObjectURL(url);
   }
 
-  function decide(status) {
-    localStorage.setItem(LINE_MANAGER_APPROVAL_KEY, JSON.stringify({ identifier: record.identifier, status, note, decidedAt: new Date().toISOString() }));
+  async function decide(status) {
+    if (status === "Revision Requested" && !note.trim()) {
+      Swal.fire({
+        icon: "warning",
+        title: "Revision note required",
+        text: "Please write what Sales needs to revise.",
+        confirmButtonColor: "#078b4d",
+      });
+      return;
+    }
+
+    const decision = { identifier: record.identifier, status, note, decidedAt: new Date().toISOString() };
+    await updateRecordStatusOnServer(
+      record.identifier,
+      status === "Approved" ? "APPROVED (PENDING OFFER LETTER)" : "REVISION REQUESTED BY LM",
+      "warning",
+      {
+        accountName: record.accountName,
+        revision: status === "Approved" ? "New" : "R-1",
+        revisionNote: status === "Revision Requested" ? note : "",
+        lineManagerDecision: status,
+        lineManagerDecidedAt: decision.decidedAt,
+        lineManagerApproval: decision,
+      }
+    );
+    onDecision?.(decision);
     Swal.fire({
       icon: status === "Approved" ? "success" : "info",
       title: status === "Approved" ? "Rate approved" : "Revision requested",
       text: status === "Approved" ? "Sales Coordinator can now prepare the offer letter." : "The file has been returned for revision.",
       confirmButtonColor: "#078b4d",
-    });
+    }).then(() => router.replace("/line-manager/dashboard"));
   }
 
   return (

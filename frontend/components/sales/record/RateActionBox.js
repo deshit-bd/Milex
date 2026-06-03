@@ -1,19 +1,28 @@
 "use client";
 
-import { useState } from "react";
-import { FiArrowRight, FiPaperclip } from "react-icons/fi";
+import { useEffect, useState } from "react";
+import { FiAlertCircle, FiArrowRight, FiPaperclip } from "react-icons/fi";
 import Swal from "sweetalert2";
-import { RATE_ACTION_KEY } from "./recordData";
+import { runDatabaseAction } from "@/lib/database";
 
-export default function RateActionBox({ record }) {
+export default function RateActionBox({ record, existingRateAction = null, initialRevisionNote = "", onForward }) {
   const [rate, setRate] = useState("");
   const [fileName, setFileName] = useState("");
+  const [revisionNote, setRevisionNote] = useState("");
+
+  useEffect(() => {
+    if (existingRateAction?.identifier === record.identifier) {
+      setRate(existingRateAction.rate || "");
+      setFileName(existingRateAction.attachment || "");
+    }
+    setRevisionNote(initialRevisionNote);
+  }, [existingRateAction, initialRevisionNote, record.identifier]);
 
   function generateRate() {
     setRate("$5.00/Kg + $25");
   }
 
-  function forward() {
+  async function forward() {
     if (!rate) {
       Swal.fire({ icon: "warning", title: "Generate a rate first", confirmButtonColor: "#078b4d" });
       return;
@@ -25,12 +34,35 @@ export default function RateActionBox({ record }) {
       attachment: fileName,
       status: "Forwarded to Line Manager",
     };
-    localStorage.setItem(RATE_ACTION_KEY, JSON.stringify(payload));
+    const result = await runDatabaseAction("forwardRate", {
+      identifier: record.identifier,
+      accountName: record.accountName,
+      rateAction: payload,
+    });
+    if (!result.ok) {
+      Swal.fire({
+        icon: "error",
+        title: "Forward failed",
+        text: result.error || "The rate could not be saved to the database.",
+        confirmButtonColor: "#078b4d",
+      });
+      return;
+    }
+    onForward?.(payload);
     Swal.fire({ icon: "success", title: "Forwarded to Line Manager", timer: 1200, showConfirmButton: false });
   }
 
   return (
     <section className="rate-action-box">
+      {revisionNote && (
+        <div className="revision-note-alert">
+          <FiAlertCircle />
+          <div>
+            <span>LINE MANAGER REVISION REQUEST</span>
+            <p>{revisionNote}</p>
+          </div>
+        </div>
+      )}
       <label>RATE REFERENCE NUMBER<input value={`REF-${record.identifier}`} readOnly /></label>
       <label>SYSTEM COMPUTED RATE MATRIX
         <div className="rate-input"><input placeholder="ex: $5.00/Kg + $25" value={rate} onChange={(event) => setRate(event.target.value)} /><button type="button" onClick={generateRate}>Generate Rate</button></div>

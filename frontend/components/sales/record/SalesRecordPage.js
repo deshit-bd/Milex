@@ -7,53 +7,99 @@ import SalesSidebar from "../SalesSidebar";
 import AccountInfo from "./AccountInfo";
 import AuditTrail from "./AuditTrail";
 import RateActionBox from "./RateActionBox";
+import ForwardedRateStatusBox from "./ForwardedRateStatusBox";
 import ApprovedOfferActions from "./ApprovedOfferActions";
 import ClientFinalizationPanel from "./ClientFinalizationPanel";
-import { CLIENT_FINALIZATION_KEY, LINE_MANAGER_APPROVAL_KEY, OFFER_DOCUMENT_KEY, SAMPLE_RECORD_DETAIL } from "./recordData";
+import { fetchDatabase } from "@/lib/database";
+import { SAMPLE_RECORD_DETAIL } from "./recordData";
 
-function getApprovedStatus(finalizationStage, offerDelivered) {
+function getApprovedStatus(finalizationStage, offerDelivered, customerAccepted) {
   if (finalizationStage === "activated") return "PROFILE ACTIVATED";
   if (finalizationStage === "documents") return "CLIENT FINAL DATA UPDATE";
   if (finalizationStage === "final-profile") return "OFFER DELIVERED (PENDING AGREEMENT)";
   if (finalizationStage === "client-rejected") return "OFFER REJECTED (REVISION REQUIRED)";
-  if (offerDelivered) return "OFFER DELIVERED (PENDING AGREEMENT)";
+  if (customerAccepted) return "CLIENT ACCEPTED OFFER (PENDING AGREEMENT)";
+  if (offerDelivered) return "OFFER DELIVERED (WAITING CUSTOMER RESPONSE)";
   return "APPROVED (PENDING OFFER LETTER)";
 }
 
-export default function SalesRecordPage({ session }) {
+function buildRecordDetail(record = {}) {
+  const submitted = record.recommendation || record;
+  const base = { ...SAMPLE_RECORD_DETAIL, ...record };
+
+  return {
+    ...base,
+    identifier: record.identifier || "",
+    accountName: submitted.accountName || record.accountName || "",
+    address: submitted.primaryAddress || record.address || "",
+    businessType: submitted.businessType || record.businessType || "",
+    mobile: submitted.mobileNumber || record.mobile || "",
+    email: submitted.emailAddress || record.email || "",
+    requestedLimit: submitted.creditLimit
+      ? `TK ${submitted.creditLimit}${submitted.creditPeriod ? ` (${submitted.creditPeriod} Days)` : ""}`
+      : record.requestedLimit || "",
+    keyContact: {
+      name: submitted.keyName || record.keyContact?.name || "",
+      phone: submitted.keyMobile || record.keyContact?.phone || "",
+      email: submitted.keyEmail || record.keyContact?.email || "",
+    },
+    financialContact: {
+      name: submitted.financialName || record.financialContact?.name || "",
+      phone: submitted.financialMobile || record.financialContact?.phone || "",
+      email: submitted.financialEmail || record.financialContact?.email || "",
+    },
+    recommendationNote: submitted.recommendationNote || record.recommendationNote || "",
+  };
+}
+
+export default function SalesRecordPage({ session, recordId }) {
   const [record, setRecord] = useState(SAMPLE_RECORD_DETAIL);
   const [approved, setApproved] = useState(false);
+  const [revisionRequested, setRevisionRequested] = useState(false);
   const [offerDelivered, setOfferDelivered] = useState(false);
   const [finalizationStage, setFinalizationStage] = useState("");
+  const [rateForwarded, setRateForwarded] = useState(false);
+  const [revisionNote, setRevisionNote] = useState("");
+  const [customerAccepted, setCustomerAccepted] = useState(false);
 
   useEffect(() => {
     window.scrollTo(0, 0);
     document.querySelector(".record-body")?.scrollTo(0, 0);
-    const selected = localStorage.getItem("milex.sales.selected-record");
-    const submitted = localStorage.getItem("milex.kam.recommendation.submitted");
-    const approval = localStorage.getItem(LINE_MANAGER_APPROVAL_KEY);
-    const offerDocument = localStorage.getItem(OFFER_DOCUMENT_KEY);
-    const finalization = localStorage.getItem(CLIENT_FINALIZATION_KEY);
-    setApproved(Boolean(approval && JSON.parse(approval).status === "Approved"));
-    setOfferDelivered(Boolean(offerDocument));
-    setFinalizationStage(finalization ? JSON.parse(finalization).stage : "");
-    if (!selected) return;
-    const selectedRecord = JSON.parse(selected);
-    const submittedRecord = submitted ? JSON.parse(submitted) : null;
-    setRecord((current) => ({
-      ...current,
-      identifier: selectedRecord.identifier,
-      accountName: selectedRecord.accountName,
-      address: submittedRecord?.primaryAddress || current.address,
-      businessType: submittedRecord?.businessType || current.businessType,
-      mobile: submittedRecord?.mobileNumber || current.mobile,
-      email: submittedRecord?.emailAddress || current.email,
-      recommendationNote: submittedRecord?.recommendationNote || current.recommendationNote,
-    }));
-  }, []);
+    async function loadRecord() {
+      const db = await fetchDatabase();
+      const currentRecord = (db.records || []).find((item) => item.identifier === recordId) || {};
+      const parsedApproval = currentRecord.lineManagerApproval || null;
+      const parsedRateAction = currentRecord.rateAction || null;
+      const parsedOfferDocument = currentRecord.offerDocument || null;
+      const parsedFinalization = currentRecord.finalization || null;
+      const status = currentRecord.status || "";
+      const hasDeliveredOffer =
+        Boolean(parsedOfferDocument) ||
+        status.includes("OFFER DELIVERED") ||
+        status.includes("CLIENT ACCEPTED") ||
+        Boolean(parsedFinalization);
+      const hasCustomerAccepted =
+        Boolean(parsedOfferDocument?.clientAccepted) ||
+        status.includes("CLIENT ACCEPTED") ||
+        Boolean(parsedFinalization);
+      setApproved(Boolean(parsedApproval?.status === "Approved" || currentRecord.status?.startsWith("APPROVED")));
+      setRevisionRequested(Boolean(parsedApproval?.status === "Revision Requested" || currentRecord.status === "REVISION REQUESTED BY LM"));
+      setRevisionNote(parsedApproval?.note || currentRecord.revisionNote || "");
+      setRateForwarded(Boolean(parsedRateAction));
+      setOfferDelivered(hasDeliveredOffer);
+      setCustomerAccepted(hasCustomerAccepted);
+      setFinalizationStage(parsedFinalization?.stage || "");
+      setRecord(buildRecordDetail(currentRecord));
+    }
+    loadRecord();
+  }, [recordId]);
 
   function handleDocumentGenerated() {
     setOfferDelivered(true);
+  }
+
+  function handleCustomerAccepted() {
+    setCustomerAccepted(true);
   }
 
   return (
@@ -68,12 +114,12 @@ export default function SalesRecordPage({ session }) {
               <span><FiTag /> {record.identifier}</span>
               {approved && <span className="rate-reference"><FiTag /> REF-{record.identifier}</span>}
             </div>
-            <strong>{approved ? getApprovedStatus(finalizationStage, offerDelivered) : "PENDING RATE PREPARATION"}</strong>
+            <strong>{approved ? getApprovedStatus(finalizationStage, offerDelivered, customerAccepted) : revisionRequested ? "REVISION REQUESTED BY LM" : rateForwarded ? "PENDING LM APPROVAL" : "PENDING RATE PREPARATION"}</strong>
           </section>
           <div className="record-layout">
             <div>
               <AccountInfo record={record} />
-              {approved && offerDelivered && finalizationStage && finalizationStage !== "client-decision" && (
+              {approved && customerAccepted && finalizationStage && finalizationStage !== "client-decision" && (
                 <ClientFinalizationPanel
                   record={record}
                   onStageChange={setFinalizationStage}
@@ -81,17 +127,31 @@ export default function SalesRecordPage({ session }) {
               )}
             </div>
             <aside>
-              {approved && offerDelivered && (!finalizationStage || finalizationStage === "client-decision") ? (
+              {approved && customerAccepted && (!finalizationStage || finalizationStage === "client-decision") ? (
                 <ClientFinalizationPanel
                   record={record}
                   onStageChange={setFinalizationStage}
                 />
               ) : approved ? (
-                <ApprovedOfferActions record={record} onDocumentGenerated={handleDocumentGenerated} />
+                <ApprovedOfferActions
+                  record={record}
+                  offerSent={offerDelivered}
+                  onDocumentGenerated={handleDocumentGenerated}
+                  onCustomerAccepted={handleCustomerAccepted}
+                />
+              ) : revisionRequested ? (
+                <RateActionBox
+                  record={record}
+                  existingRateAction={record.rateAction}
+                  initialRevisionNote={revisionNote || "Line Manager requested a revision. Please update the rate and forward it again."}
+                  onForward={() => { setRateForwarded(true); setRevisionRequested(false); }}
+                />
+              ) : rateForwarded ? (
+                <ForwardedRateStatusBox record={record} />
               ) : (
-                <RateActionBox record={record} />
+                <RateActionBox record={record} existingRateAction={record.rateAction} onForward={() => setRateForwarded(true)} />
               )}
-              <AuditTrail approved={approved} finalizationStage={finalizationStage} offerDelivered={offerDelivered} />
+              <AuditTrail approved={approved} revisionRequested={revisionRequested} revisionNote={revisionNote} rateForwarded={rateForwarded} finalizationStage={finalizationStage} offerDelivered={offerDelivered} />
             </aside>
           </div>
         </div>

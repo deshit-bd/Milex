@@ -9,7 +9,7 @@ function getActiveStep(finalizationStage, offerDelivered) {
   return ["PENDING OFFER LETTER", "Waiting for SC Offer letter"];
 }
 
-export default function AuditTrail({ approved = false, finalizationStage = "", offerDelivered = false }) {
+export default function AuditTrail({ approved = false, revisionRequested = false, revisionNote = "", rateForwarded = false, finalizationStage = "", offerDelivered = false }) {
   const [activeTitle, activeDescription] = getActiveStep(finalizationStage, offerDelivered);
 
   return (
@@ -21,6 +21,17 @@ export default function AuditTrail({ approved = false, finalizationStage = "", o
           {offerDelivered && <div className="audit-item"><i /><strong>OFFER LETTER / AGREEMENT GENERATED</strong><p>Ready for client signature</p></div>}
           <div className="audit-item"><i /><strong>RATE APPROVED BY LM</strong><p>Oct 24, 2023 - 09:41 AM</p></div>
           <div className="audit-item"><i /><strong>RATE PREPARATION BY SC</strong><p>Oct 24, 2023 - 09:41 AM</p></div>
+        </>
+      ) : revisionRequested ? (
+        <>
+          <div className="audit-item active"><i /><strong>REVISION REQUESTED BY LM</strong><p>{revisionNote || "Sales Coordinator must revise and forward rate again"}</p></div>
+          <div className="audit-item"><i /><strong>PENDING LM APPROVAL</strong><p>Line Manager returned the file</p></div>
+          <div className="audit-item"><i /><strong>RATE PREPARATION BY SC</strong><p>Forwarded to Line Manager</p></div>
+        </>
+      ) : rateForwarded ? (
+        <>
+          <div className="audit-item active"><i /><strong>PENDING LM APPROVAL</strong><p>Waiting for Line Manager approval</p></div>
+          <div className="audit-item"><i /><strong>RATE PREPARATION BY SC</strong><p>Forwarded to Line Manager</p></div>
         </>
       ) : (
         <div className="audit-item active"><i /><strong>PENDING RATE PREPARATION</strong><p>Waiting for Pricing Team</p></div>

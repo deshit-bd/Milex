@@ -4,7 +4,7 @@ export const NAV_ITEMS = [
   { label: "Dashboard", icon: FiGrid, href: "/kam/dashboard" },
   { label: "Recommendations", icon: FiStar, href: "/kam/recommendations" },
   { label: "Task Queue & Record", icon: FiCheckSquare, href: "#" },
-  { label: "Customers", icon: FiUsers, href: "#" },
+  { label: "Customers", icon: FiUsers, href: "/kam/customers" },
 ];
 
 export const OVERVIEW_CARDS = [

@@ -1,6 +1,7 @@
 export const DRAFT_KEY = "milex.kam.recommendation.draft";
 
 export const INITIAL_FORM = {
+  identifier: "",
   accountName: "",
   primaryAddress: "",
   areaName: "",

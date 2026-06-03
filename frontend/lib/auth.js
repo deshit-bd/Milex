@@ -1,3 +1,5 @@
+import { ensureDatabase } from "./database";
+
 export const STORAGE_KEY = "milex.session";
 
 export const DEMO_USERS = [
@@ -15,6 +17,7 @@ export function getRoleRoute(session) {
 }
 
 export function getCurrentSession() {
+  ensureDatabase();
   const storedSession = localStorage.getItem(STORAGE_KEY);
   if (!storedSession) return null;
 
@@ -27,6 +30,7 @@ export function getCurrentSession() {
 }
 
 export function authenticate(credentials) {
+  ensureDatabase();
   const user = DEMO_USERS.find(
     (item) =>
       item.email === credentials.email.trim().toLowerCase() &&

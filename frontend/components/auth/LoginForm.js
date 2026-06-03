@@ -58,7 +58,7 @@ export default function LoginForm() {
             </div>
             <div className="input-wrap">
               <FiLock />
-              <input id="password" name="password" type="password" placeholder="••••••••" value={credentials.password} onChange={updateCredential} required />
+              <input id="password" name="password" type="password" placeholder="Password" value={credentials.password} onChange={updateCredential} required />
             </div>
             <button className="sign-in-button" type="submit">Sign In <FiArrowRight /></button>
           </form>

@@ -9,18 +9,40 @@ import ContactPersonsStep from "./ContactPersonsStep";
 import ShippingDetailsStep from "./ShippingDetailsStep";
 import RecommendationDetailsStep from "./RecommendationDetailsStep";
 import { DRAFT_KEY, INITIAL_FORM } from "./recommendationData";
+import { createCustomerCode, createCustomerCodeFromServer } from "@/lib/workflow";
+import { runDatabaseAction } from "@/lib/database";
 
-export default function RecommendationForm() {
+function normalizeCustomerCode(identifier) {
+  return identifier ? identifier.replace(/^MLX-/, "MLX") : "";
+}
+
+export default function RecommendationForm({ onCustomerCodeChange }) {
   const [form, setForm] = useState(INITIAL_FORM);
   const [currentStep, setCurrentStep] = useState(1);
 
   useEffect(() => {
     const draft = localStorage.getItem(DRAFT_KEY);
-    if (!draft) return;
-    const parsedDraft = JSON.parse(draft);
-    setForm({ ...INITIAL_FORM, ...(parsedDraft.form || parsedDraft) });
-    setCurrentStep(parsedDraft.currentStep || 1);
-  }, []);
+    const parsedDraft = draft ? JSON.parse(draft) : {};
+    const draftForm = parsedDraft.form || parsedDraft;
+    const nextStep = parsedDraft.currentStep || 1;
+    const identifier = normalizeCustomerCode(draftForm.identifier) || createCustomerCode();
+    const nextForm = { ...INITIAL_FORM, ...draftForm, identifier };
+
+    setForm(nextForm);
+    setCurrentStep(nextStep);
+    onCustomerCodeChange?.(identifier);
+    if (!draftForm.identifier) {
+      createCustomerCodeFromServer().then((serverIdentifier) => {
+        const serverForm = { ...nextForm, identifier: serverIdentifier };
+        setForm(serverForm);
+        onCustomerCodeChange?.(serverIdentifier);
+        localStorage.setItem(DRAFT_KEY, JSON.stringify({ form: serverForm, currentStep: nextStep }));
+      });
+    }
+    if (!draftForm.identifier) {
+      localStorage.setItem(DRAFT_KEY, JSON.stringify({ form: nextForm, currentStep: nextStep }));
+    }
+  }, [onCustomerCodeChange]);
 
   function updateForm(event) {
     const value = event.target.type === "checkbox" ? event.target.checked : event.target.value;
@@ -57,23 +79,23 @@ export default function RecommendationForm() {
     Swal.fire({ icon: "success", title: "Information saved", text: "Ready for the next section.", timer: 900, showConfirmButton: false });
   }
 
-  function submitRecommendation(event) {
+  async function submitRecommendation(event) {
     event.preventDefault();
     if (!event.currentTarget.form.reportValidity()) return;
-    const wordCount = form.recommendationNote.trim().split(/\s+/).filter(Boolean).length;
-    if (wordCount < 50) {
+
+    const identifier = normalizeCustomerCode(form.identifier) || createCustomerCode();
+    const record = { ...form, identifier, status: "Submitted to Sales Coordinator", submittedAt: new Date().toISOString() };
+    const result = await runDatabaseAction("submitRecommendation", { record });
+    localStorage.removeItem(DRAFT_KEY);
+    if (!result.ok) {
       Swal.fire({
         icon: "warning",
-        title: "More detail required",
-        text: `Please write at least 50 words. Current count: ${wordCount}.`,
+        title: "Saved locally only",
+        text: result.error || "Google Sheets is not configured yet.",
         confirmButtonColor: "#078b4d",
       });
       return;
     }
-
-    const record = { ...form, status: "Submitted to Sales Coordinator", submittedAt: new Date().toISOString() };
-    localStorage.setItem("milex.kam.recommendation.submitted", JSON.stringify(record));
-    localStorage.removeItem(DRAFT_KEY);
     Swal.fire({
       icon: "success",
       title: "Recommendation submitted",
