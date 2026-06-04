@@ -54,6 +54,11 @@ function buildRecordDetail(record = {}) {
       phone: submitted.keyMobile || record.keyContact?.phone || "",
       email: submitted.keyEmail || record.keyContact?.email || "",
     },
+    seniorContact: {
+      name: submitted.seniorName || record.seniorContact?.name || "",
+      phone: submitted.seniorMobile || record.seniorContact?.phone || "",
+      email: submitted.seniorEmail || record.seniorContact?.email || "",
+    },
     financialContact: {
       name: submitted.financialName || record.financialContact?.name || "",
       phone: submitted.financialMobile || record.financialContact?.phone || "",

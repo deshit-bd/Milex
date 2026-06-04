@@ -3,7 +3,7 @@ import { FiClock } from "react-icons/fi";
 function getActiveStep(finalizationStage, offerDelivered) {
   if (finalizationStage === "activated") return ["PROFILE ACTIVATED", "Customer profile distributed"];
   if (finalizationStage === "documents") return ["CLIENT FINAL DATA UPDATE", "Waiting for legal documents"];
-  if (finalizationStage === "final-profile") return ["FINAL ACCOUNT PROFILE", "Waiting for account profile data"];
+  if (finalizationStage === "final-profile") return ["PENDING_PROFILE", "Waiting for account profile setup"];
   if (finalizationStage === "client-rejected") return ["OFFER REJECTED", "Revision required"];
   if (offerDelivered) return ["OFFER DELIVERED", "Waiting for client agreement"];
   return ["PENDING OFFER LETTER", "Waiting for SC Offer letter"];

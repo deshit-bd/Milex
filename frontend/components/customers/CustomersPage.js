@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import Topbar from "@/components/kam/Topbar";
 import KamSidebar from "@/components/kam/Sidebar";
 import SalesSidebar from "@/components/sales/SalesSidebar";
@@ -14,6 +15,7 @@ function getSidebar(role) {
 }
 
 export default function CustomersPage({ session }) {
+  const router = useRouter();
   const [customers, setCustomers] = useState([]);
   const Sidebar = getSidebar(session.role);
 
@@ -22,6 +24,17 @@ export default function CustomersPage({ session }) {
       setCustomers(db.apiError ? readCustomers() : db.customers || []);
     });
   }, []);
+
+  function openProfile(customer) {
+    const rolePath =
+      session.role === "KAM"
+        ? "kam"
+        : session.role === "Line Manager"
+          ? "line-manager"
+          : "sales";
+
+    router.push(`/${rolePath}/tasks/${customer.customerId}`);
+  }
 
   return (
     <main className="portal">
@@ -43,7 +56,7 @@ export default function CustomersPage({ session }) {
                       <td>{customer.customerId}</td>
                       <td>{customer.accountName}</td>
                       <td><span className="record-status success">{customer.status}</span></td>
-                      <td><button type="button">Open Record &gt;</button></td>
+                      <td><button type="button" onClick={() => openProfile(customer)}>View Master Profile &gt;</button></td>
                     </tr>
                   ))
                 ) : (

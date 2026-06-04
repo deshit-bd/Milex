@@ -124,6 +124,11 @@ export function buildRecordFromWorkflow(selectedRecord = null) {
       phone: submitted.keyMobile || base.keyContact.phone,
       email: submitted.keyEmail || base.keyContact.email,
     },
+    seniorContact: {
+      name: submitted.seniorName || base.seniorContact?.name || "",
+      phone: submitted.seniorMobile || base.seniorContact?.phone || "",
+      email: submitted.seniorEmail || base.seniorContact?.email || "",
+    },
     financialContact: {
       name: submitted.financialName || base.financialContact.name,
       phone: submitted.financialMobile || base.financialContact.phone,
@@ -156,6 +161,11 @@ export async function buildRecordFromWorkflowFromServer(selectedRecord = null) {
       name: submitted.keyName || base.keyContact.name,
       phone: submitted.keyMobile || base.keyContact.phone,
       email: submitted.keyEmail || base.keyContact.email,
+    },
+    seniorContact: {
+      name: submitted.seniorName || base.seniorContact?.name || "",
+      phone: submitted.seniorMobile || base.seniorContact?.phone || "",
+      email: submitted.seniorEmail || base.seniorContact?.email || "",
     },
     financialContact: {
       name: submitted.financialName || base.financialContact.name,

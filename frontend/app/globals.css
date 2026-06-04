@@ -918,6 +918,42 @@ input::placeholder {
   line-height: 1.45;
 }
 
+.shipping-summary {
+  margin: 18px 20px 0;
+  padding: 13px;
+  border: 1px solid #dbe2e9;
+  border-radius: 7px;
+  background: #f8fbff;
+}
+
+.shipping-summary strong {
+  color: #728198;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+}
+
+.shipping-summary p {
+  margin: 8px 0 0;
+  color: #26354b;
+  font-size: 12px;
+}
+
+.shipping-route-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 10px;
+}
+
+.shipping-route-list span {
+  padding: 5px 8px;
+  border-radius: 13px;
+  background: #e9f1ff;
+  color: #1764cf;
+  font-size: 10px;
+  font-weight: 700;
+}
+
 .kam-note {
   margin: 18px 20px 20px;
   padding: 14px;
@@ -1080,6 +1116,22 @@ input::placeholder {
   color: white;
   font-size: 12px;
   font-weight: 700;
+}
+
+.download-rate-csv {
+  display: flex;
+  width: 100%;
+  height: 32px;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 10px;
+  border: 1px solid #c7d2df;
+  border-radius: 5px;
+  background: white;
+  color: #1766c2;
+  font-size: 11px;
+  font-weight: 800;
 }
 
 .forwarded-status-box {
@@ -1249,6 +1301,26 @@ input::placeholder {
   line-height: 1.3;
 }
 
+.handoff-note {
+  display: flex !important;
+  align-items: center;
+  justify-content: flex-start !important;
+  gap: 8px !important;
+  margin-top: 16px !important;
+  padding: 12px;
+  border: 1px solid #bde6d2;
+  border-radius: 6px;
+  background: #f2fff9;
+  color: #078b4d;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.45;
+}
+
+.handoff-note svg {
+  flex: 0 0 auto;
+}
+
 .finalization-card {
   margin-top: 15px;
   padding: 16px;
@@ -1278,6 +1350,34 @@ input::placeholder {
   justify-content: flex-start;
 }
 
+.agreement-complete-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 10px 0 15px;
+  padding: 12px;
+  border: 1px solid #bde6d2;
+  border-radius: 6px;
+  background: #f2fff9;
+  color: #0f6b43;
+}
+
+.agreement-complete-banner svg {
+  flex: 0 0 auto;
+  margin-top: 2px;
+}
+
+.agreement-complete-banner strong {
+  display: block;
+  font-size: 13px;
+}
+
+.agreement-complete-banner p {
+  margin: 4px 0 0;
+  color: #2f5d4a;
+  font-size: 12px;
+}
+
 .finalization-card p {
   margin: 0 0 12px;
   color: #617088;
@@ -1305,6 +1405,31 @@ input::placeholder {
   color: #0f5fa8;
   font-weight: 800;
   font-size: 11px;
+}
+
+.signed-agreement-upload {
+  position: relative;
+  display: flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  margin: 8px 0 15px;
+  border: 2px dashed #b9c7d8;
+  border-radius: 6px;
+  background: #f8fbff;
+  color: #1766c2;
+  font-size: 12px;
+  font-weight: 800;
+  overflow: hidden;
+}
+
+.signed-agreement-upload input {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
 }
 
 .customer-agreed,
@@ -1419,6 +1544,17 @@ input::placeholder {
   font-family: inherit;
   font-size: 12px;
   resize: vertical;
+}
+
+.provisional-expiry-alert {
+  margin: -5px 0 14px;
+  padding: 10px 12px;
+  border: 1px solid #f1b859;
+  border-radius: 6px;
+  background: #fff9ec;
+  color: #b76400;
+  font-size: 12px;
+  font-weight: 800;
 }
 
 .profile-grid label {
@@ -1712,6 +1848,18 @@ input::placeholder {
   font-family: inherit;
   font-size: 11px;
   resize: vertical;
+}
+
+.lm-action-box input {
+  width: 100%;
+  height: 36px;
+  margin-top: 7px;
+  padding: 0 10px;
+  border: 1px solid #cbd4df;
+  border-radius: 5px;
+  background: #f8fafc;
+  color: #334258;
+  font-size: 12px;
 }
 
 .lm-decision-actions {
@@ -2254,6 +2402,16 @@ input::placeholder {
   accent-color: #078b4d;
 }
 
+.shipment-other-input {
+  height: 32px;
+  margin-top: 10px;
+  padding: 0 8px;
+  border: 1px dashed #c5ced9;
+  border-radius: 5px;
+  color: #233247;
+  font-size: 12px;
+}
+
 .icon-input {
   display: flex;
   height: 34px;
@@ -2274,6 +2432,9 @@ input::placeholder {
 }
 
 .add-route {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   padding: 4px 8px;
   border: 0;
   background: transparent;
@@ -2284,7 +2445,7 @@ input::placeholder {
 
 .additional-route {
   display: grid;
-  grid-template-columns: 145px minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-columns: 145px minmax(0, 1fr) minmax(0, 1fr) 32px;
   gap: 10px;
   align-items: center;
   margin-bottom: 10px;
@@ -2306,6 +2467,17 @@ input::placeholder {
   background: #fff;
   font-family: inherit;
   font-size: 11px;
+}
+
+.additional-route button {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  border: 1px solid #f0b7b7;
+  border-radius: 5px;
+  background: #fff8f8;
+  color: #d33d3d;
 }
 
 .shipping-actions {

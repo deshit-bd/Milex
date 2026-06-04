@@ -32,6 +32,7 @@ export const INITIAL_FORM = {
   shipmentDocument: false,
   shipmentNonDocument: false,
   shipmentOthers: false,
+  shipmentOtherText: "",
   rateFor: "",
   destinationCountry: "",
   monthlyVolume: "",

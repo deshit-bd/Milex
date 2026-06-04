@@ -11,6 +11,19 @@ function ContactRow({ label, contact }) {
 }
 
 export default function AccountInfo({ record }) {
+  const recommendation = record.recommendation || {};
+  const shipmentTypes = [
+    recommendation.shipmentDocument ? "Document" : "",
+    recommendation.shipmentNonDocument ? "Non-Document" : "",
+    recommendation.shipmentOthers ? `Others${recommendation.shipmentOtherText ? `: ${recommendation.shipmentOtherText}` : ""}` : "",
+  ].filter(Boolean);
+  const routes = [
+    recommendation.destinationCountry || recommendation.rateFor
+      ? { country: recommendation.destinationCountry, rateFor: recommendation.rateFor }
+      : null,
+    ...(recommendation.additionalRoutes || []),
+  ].filter(Boolean);
+
   return (
     <>
       <section className="account-info-card">
@@ -26,9 +39,25 @@ export default function AccountInfo({ record }) {
         </div>
         <strong className="contacts-label">PRIMARY CONTACTS</strong>
         <div className="account-contacts">
+          {record.seniorContact?.name && <ContactRow label="SENIOR MANAGEMENT" contact={record.seniorContact} />}
           <ContactRow label="KEY CONTACT PERSON" contact={record.keyContact} />
           <ContactRow label="FINANCIAL CONTACT" contact={record.financialContact} />
         </div>
+        {(shipmentTypes.length > 0 || routes.length > 0) && (
+          <div className="shipping-summary">
+            <strong>SHIPPING & RATE REQUEST</strong>
+            {shipmentTypes.length > 0 && <p>Shipment Type: {shipmentTypes.join(", ")}</p>}
+            {routes.length > 0 && (
+              <div className="shipping-route-list">
+                {routes.map((route, index) => (
+                  <span key={`${route.country || "route"}-${index}`}>
+                    {route.country || "Country pending"} - {route.rateFor || "Rate pending"}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
         <div className="kam-note">
           <strong>KAM RECOMMENDATION NOTE</strong>
           <p>{record.recommendationNote}</p>

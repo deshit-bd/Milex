@@ -9,6 +9,7 @@ import { updateRecordStatusOnServer } from "@/lib/database";
 export default function LineManagerActionBox({ record, onDecision }) {
   const router = useRouter();
   const [note, setNote] = useState("");
+  const [approvedRate, setApprovedRate] = useState(record.rateAction?.rate || "");
   const rateAction = record.rateAction || {};
   const rateReference = `REF-${rateAction.identifier || record.identifier}`;
 
@@ -26,15 +27,31 @@ export default function LineManagerActionBox({ record, onDecision }) {
     if (status === "Revision Requested" && !note.trim()) {
       Swal.fire({
         icon: "warning",
-        title: "Revision note required",
+        title: "Reject note required",
         text: "Please write what Sales needs to revise.",
         confirmButtonColor: "#078b4d",
       });
       return;
     }
 
-    const decision = { identifier: record.identifier, status, note, decidedAt: new Date().toISOString() };
-    await updateRecordStatusOnServer(
+    if (status === "Approved" && !approvedRate.trim()) {
+      Swal.fire({
+        icon: "warning",
+        title: "Approved rate required",
+        text: "Please confirm or customize the approved rate before approval.",
+        confirmButtonColor: "#078b4d",
+      });
+      return;
+    }
+
+    const decision = {
+      identifier: record.identifier,
+      status,
+      note,
+      approvedRate: status === "Approved" ? approvedRate : "",
+      decidedAt: new Date().toISOString(),
+    };
+    const savedRecord = await updateRecordStatusOnServer(
       record.identifier,
       status === "Approved" ? "APPROVED (PENDING OFFER LETTER)" : "REVISION REQUESTED BY LM",
       "warning",
@@ -42,16 +59,17 @@ export default function LineManagerActionBox({ record, onDecision }) {
         accountName: record.accountName,
         revision: status === "Approved" ? "New" : "R-1",
         revisionNote: status === "Revision Requested" ? note : "",
+        approvedRate: status === "Approved" ? approvedRate : "",
         lineManagerDecision: status,
         lineManagerDecidedAt: decision.decidedAt,
         lineManagerApproval: decision,
       }
     );
-    onDecision?.(decision);
+    onDecision?.(savedRecord.lineManagerApproval || decision);
     Swal.fire({
       icon: status === "Approved" ? "success" : "info",
       title: status === "Approved" ? "Rate approved" : "Revision requested",
-      text: status === "Approved" ? "Sales Coordinator can now prepare the offer letter." : "The file has been returned for revision.",
+      text: status === "Approved" ? "Sales Coordinator can now prepare the offer letter." : "The file has been returned to Sales Coordinator for rate revision.",
       confirmButtonColor: "#078b4d",
     }).then(() => router.replace("/line-manager/dashboard"));
   }
@@ -64,10 +82,11 @@ export default function LineManagerActionBox({ record, onDecision }) {
         <strong>{rateReference}</strong>
         <button type="button" onClick={downloadRate}><FiDownload /> Download Excel to Verify</button>
       </div>
-      <label>NOTE<textarea placeholder="Notes..." value={note} onChange={(event) => setNote(event.target.value)} /></label>
+      <label>APPROVED RATE<input placeholder="Confirm or customize rate" value={approvedRate} onChange={(event) => setApprovedRate(event.target.value)} /></label>
+      <label>NOTE<textarea placeholder="Write approval note or rejection reason..." value={note} onChange={(event) => setNote(event.target.value)} /></label>
       <div className="lm-decision-actions">
         <button type="button" onClick={() => decide("Approved")}><FiCheckCircle /> Approve</button>
-        <button type="button" onClick={() => decide("Revision Requested")}><FiXCircle /> Revision</button>
+        <button type="button" onClick={() => decide("Revision Requested")}><FiXCircle /> Reject</button>
       </div>
     </section>
   );

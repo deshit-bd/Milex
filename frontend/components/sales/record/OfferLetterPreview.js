@@ -5,6 +5,8 @@ import { FiPrinter, FiX } from "react-icons/fi";
 export default function OfferLetterPreview({ record, onClose }) {
   const date = new Intl.DateTimeFormat("en-GB").format(new Date());
   const reference = `REF-${record.identifier}`;
+  const approvedRate = record.lineManagerApproval?.approvedRate || record.approvedRate || record.rateAction?.rate || "As per Annexure A";
+  const approvalNote = record.lineManagerApproval?.note || "";
 
   return (
     <div className="document-preview-overlay">
@@ -37,9 +39,11 @@ export default function OfferLetterPreview({ record, onClose }) {
               <strong>Rate Summary (Detailed Excel Annexed):</strong>
               <ul>
                 <li>Standard Delivery: As per Annexure A ({reference})</li>
+                <li>Approved Rate: {approvedRate}</li>
                 <li>Credit Facility: Offered up to BDT {record.requestedLimit}</li>
                 <li>Credit Period: 30 Days from invoice generation.</li>
               </ul>
+              {approvalNote && <p><strong>Special Note:</strong> {approvalNote}</p>}
             </section>
           </article>
         </div>

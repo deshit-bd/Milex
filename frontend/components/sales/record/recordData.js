@@ -20,6 +20,8 @@ export const CLIENT_FINALIZATION_KEY = "milex.sales.client-finalization";
 export const FINAL_PROFILE_INITIAL = {
   accountMode: "Regular Account",
   provisionalReason: "",
+  provisionalExpiryDate: "",
+  signedAgreementFile: "",
   managingPartner: "",
   binNumber: "",
   tinNumber: "",

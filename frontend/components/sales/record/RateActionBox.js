@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { FiAlertCircle, FiArrowRight, FiPaperclip } from "react-icons/fi";
+import { FiAlertCircle, FiArrowRight, FiDownload, FiPaperclip } from "react-icons/fi";
 import Swal from "sweetalert2";
 import { runDatabaseAction } from "@/lib/database";
 
@@ -20,6 +20,36 @@ export default function RateActionBox({ record, existingRateAction = null, initi
 
   function generateRate() {
     setRate("$5.00/Kg + $25");
+    if (!fileName) setFileName(`REF-${record.identifier}-rate.csv`);
+  }
+
+  function downloadRateCsv() {
+    const recommendation = record.recommendation || {};
+    const routes = [
+      { country: recommendation.destinationCountry || "Primary Destination", rateFor: recommendation.rateFor || "Import & Export" },
+      ...(recommendation.additionalRoutes || []),
+    ].filter((route) => route.country || route.rateFor);
+    const rows = [
+      ["Rate Reference", `REF-${record.identifier}`],
+      ["Account", record.accountName],
+      ["Shipment Type", [
+        recommendation.shipmentDocument ? "Document" : "",
+        recommendation.shipmentNonDocument ? "Non-Document" : "",
+        recommendation.shipmentOthers ? `Others: ${recommendation.shipmentOtherText || ""}` : "",
+      ].filter(Boolean).join(" | ")],
+      ["Generated Rate", rate || "$5.00/Kg + $25"],
+      [],
+      ["Country", "Rate For"],
+      ...routes.map((route) => [route.country || "", route.rateFor || ""]),
+    ];
+    const csv = rows.map((row) => row.map((cell = "") => `"${String(cell).replace(/"/g, '""')}"`).join(",")).join("\n");
+    const file = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(file);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = `REF-${record.identifier}-rate.csv`;
+    anchor.click();
+    URL.revokeObjectURL(url);
   }
 
   async function forward() {
@@ -70,6 +100,7 @@ export default function RateActionBox({ record, existingRateAction = null, initi
       <label>SUPPORTING DOCUMENTS
         <span className="attachment-input"><FiPaperclip /> {fileName || "Attach Excel Calculations"}<input type="file" accept=".xls,.xlsx,.csv" onChange={(event) => setFileName(event.target.files[0]?.name || "")} /></span>
       </label>
+      <button className="download-rate-csv" type="button" onClick={downloadRateCsv}><FiDownload /> Download CSV Rate Sheet</button>
       <button className="forward-action" type="button" onClick={forward}>Forward to Line Manager <FiArrowRight /></button>
     </section>
   );

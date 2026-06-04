@@ -1,14 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { FiCheckCircle, FiMail, FiXCircle } from "react-icons/fi";
+import { FiCheckCircle, FiFileText, FiMail } from "react-icons/fi";
 import Swal from "sweetalert2";
 import OfferLetterPreview from "./OfferLetterPreview";
 import { updateRecordStatusOnServer } from "@/lib/database";
 
-export default function ApprovedOfferActions({ record, offerSent = false, onDocumentGenerated, onCustomerAccepted }) {
+export default function ApprovedOfferActions({ record, offerSent = false, onDocumentGenerated }) {
   const [previewOpen, setPreviewOpen] = useState(false);
-  const [rejectReason, setRejectReason] = useState("");
   const effectiveOfferSent =
     offerSent ||
     Boolean(record.offerDocument) ||
@@ -34,40 +33,26 @@ export default function ApprovedOfferActions({ record, offerSent = false, onDocu
     setPreviewOpen(true);
   }
 
-  async function acceptOffer() {
+  async function generateAgreement() {
     const payload = {
+      ...(record.offerDocument || {}),
       identifier: record.identifier,
       accountName: record.accountName,
-      type: "Offer Letter",
-      status: "Client Accepted Offer",
-      clientAccepted: true,
-      acceptedAt: new Date().toISOString(),
+      agreementGenerated: true,
+      agreementGeneratedAt: new Date().toISOString(),
     };
-    await updateRecordStatusOnServer(record.identifier, "CLIENT ACCEPTED OFFER (PENDING AGREEMENT)", "warning", {
+    await updateRecordStatusOnServer(record.identifier, "OFFER DELIVERED (PENDING AGREEMENT)", "warning", {
       accountName: record.accountName,
       revision: "New",
       offerDocument: payload,
     });
-    onCustomerAccepted?.(payload);
+    onDocumentGenerated?.(payload);
     Swal.fire({
       icon: "success",
-      title: "Customer accepted offer",
-      text: "Agreement can now be prepared.",
+      title: "Agreement generated",
+      text: "The agreement is ready for printing and client signature.",
       confirmButtonColor: "#078b4d",
     });
-  }
-
-  async function rejectOffer() {
-    if (!rejectReason.trim()) {
-      Swal.fire({ icon: "warning", title: "Reject reason required", confirmButtonColor: "#078b4d" });
-      return;
-    }
-    await updateRecordStatusOnServer(record.identifier, "OFFER REJECTED (REVISION REQUIRED)", "danger", {
-      accountName: record.accountName,
-      revision: "R-1",
-      offerRejectReason: rejectReason,
-    });
-    Swal.fire({ icon: "info", title: "Offer rejected", text: "Revision has been triggered.", confirmButtonColor: "#078b4d" });
   }
 
   return (
@@ -78,17 +63,16 @@ export default function ApprovedOfferActions({ record, offerSent = false, onDocu
             <p>RATE APPROVED BY LM. PREPARE OFFICIAL LETTERHEAD.</p>
             <div>
               <button type="button" onClick={generateOfferLetter}><FiMail /> Generate &amp; Email<br />Offer Letter</button>
+              <button type="button" onClick={generateAgreement}><FiFileText /> Generate<br />Agreement</button>
             </div>
           </>
         ) : (
           <>
-            <p>OFFER DELIVERED. WAITING FOR CUSTOMER RESPONSE.</p>
-            <button className="customer-agreed" type="button" onClick={acceptOffer}><FiCheckCircle /> Mark Customer Accepted Offer</button>
-            <label className="reject-reason">
-              If no, enter reason & reject
-              <input placeholder="e.g. Rate too high" value={rejectReason} onChange={(event) => setRejectReason(event.target.value)} />
-            </label>
-            <button className="reject-offer" type="button" onClick={rejectOffer}><FiXCircle /> Reject Offer (Trigger R-1)</button>
+            <p>OFFER DELIVERED. KAM WILL COLLECT CUSTOMER SIGNATURE &amp; AGREEMENT.</p>
+            <div className="handoff-note">
+              <FiCheckCircle />
+              <span>Record is now available in KAM Task Queue &amp; Record.</span>
+            </div>
           </>
         )}
       </section>

@@ -62,8 +62,52 @@ export function upsertRecord(record) {
   return nextRecord;
 }
 
+function getStatusRank(status = "") {
+  const ranks = {
+    "PENDING RATE PREPARATION": 1,
+    "PENDING LM APPROVAL": 2,
+    "PENDING RATE APPROVAL": 2,
+    "REVISION REQUESTED BY LM": 3,
+    "OFFER REJECTED (REVISION REQUIRED)": 3,
+    "APPROVED (PENDING OFFER LETTER)": 4,
+    "OFFER DELIVERED (PENDING AGREEMENT)": 5,
+    "CLIENT ACCEPTED OFFER (PENDING AGREEMENT)": 6,
+    PENDING_PROFILE: 7,
+    "FINAL PROFILE DATA": 7,
+    "CLIENT FINAL DATA UPDATE": 8,
+    "ACTIVE & DISTRIBUTED": 9,
+  };
+  return ranks[status] || 0;
+}
+
+function mergeRecords(serverRecords = [], localRecords = []) {
+  const merged = new Map();
+  serverRecords.forEach((record) => merged.set(record.identifier, record));
+  localRecords.forEach((localRecord) => {
+    const serverRecord = merged.get(localRecord.identifier);
+    if (!serverRecord || getStatusRank(localRecord.status) >= getStatusRank(serverRecord.status)) {
+      merged.set(localRecord.identifier, { ...serverRecord, ...localRecord });
+    }
+  });
+  return Array.from(merged.values());
+}
+
+function mergeCustomers(serverCustomers = [], localCustomers = []) {
+  const merged = new Map();
+  serverCustomers.forEach((customer) => merged.set(customer.customerId, customer));
+  localCustomers.forEach((localCustomer) => {
+    const serverCustomer = merged.get(localCustomer.customerId);
+    merged.set(localCustomer.customerId, { ...serverCustomer, ...localCustomer });
+  });
+  return Array.from(merged.values());
+}
+
 export function updateRecordStatus(identifier, status, tone = "info", extras = {}) {
   return upsertRecord({ identifier, status, tone, ...extras });
+}
+
+function normalizeIdentifier(identifier) {
+  return identifier ? String(identifier).replace(/^MLX-/, "MLX") : "";
 }
 
 export function upsertCustomer(customer) {
@@ -118,16 +162,18 @@ export function generateCustomerCode() {
 
 export async function fetchDatabase() {
   try {
+    const localDb = readDatabase();
     const response = await fetch(API_URL, { cache: "no-store" });
     const result = await response.json();
     if (!response.ok || !result.ok) throw new Error(result.error || "Database request failed");
-    writeDatabase({
-      records: result.db.records || [],
-      customers: result.db.customers || [],
+    const nextDb = {
+      records: mergeRecords(result.db.records || [], localDb.records || []),
+      customers: mergeCustomers(result.db.customers || [], localDb.customers || []),
       nextCustomerNumber: result.db.nextCustomerNumber || 1,
       workflow: result.db.workflow || {},
-    });
-    return result.db;
+    };
+    writeDatabase(nextDb);
+    return nextDb;
   } catch (error) {
     return { ...readDatabase(), workflow: readDatabase().workflow || {}, apiError: error.message };
   }
@@ -151,8 +197,53 @@ export async function runDatabaseAction(type, payload = {}) {
         workflow: result.db.workflow || {},
       });
     }
+    if (result.record) upsertRecord(result.record);
+    if (result.customer) upsertCustomer(result.customer);
     return result;
   } catch (error) {
+    if (type === "generateCustomerCode") {
+      const identifier = generateCustomerCode();
+      return { ok: true, localOnly: true, identifier, db: readDatabase() };
+    }
+
+    if (type === "submitRecommendation") {
+      const recommendation = { ...(payload.record || {}) };
+      recommendation.identifier = normalizeIdentifier(recommendation.identifier);
+      const record = upsertRecord({
+        ...recommendation,
+        identifier: recommendation.identifier,
+        accountName: recommendation.accountName,
+        status: "PENDING RATE PREPARATION",
+        revision: "New",
+        tone: "info",
+        recommendation,
+        rateAction: null,
+        lineManagerApproval: null,
+        offerDocument: null,
+        finalization: null,
+        revisionNote: "",
+      });
+      return { ok: true, localOnly: true, warning: error.message, record, db: readDatabase() };
+    }
+
+    if (type === "forwardRate") {
+      const identifier = normalizeIdentifier(payload.identifier);
+      const existing = readRecords().find((item) => item.identifier === identifier);
+      const rateAction = { ...(payload.rateAction || {}), identifier };
+      const record = updateRecordStatus(identifier, "PENDING LM APPROVAL", "warning", {
+        ...existing,
+        accountName: payload.accountName || existing?.accountName || "",
+        revision: existing?.revision || "New",
+        rateAction,
+        lineManagerApproval: null,
+        lineManagerDecision: "",
+        lineManagerDecidedAt: "",
+        revisionNote: "",
+        rateForwardedAt: new Date().toISOString(),
+      });
+      return { ok: true, localOnly: true, warning: error.message, record, db: readDatabase() };
+    }
+
     return { ok: false, error: error.message, db: readDatabase() };
   }
 }
@@ -165,17 +256,17 @@ export async function generateCustomerCodeFromServer() {
 export async function upsertRecordOnServer(record) {
   const localRecord = upsertRecord(record);
   const result = await runDatabaseAction("upsertRecord", { record });
-  return result.record || localRecord;
+  return result.record ? upsertRecord(result.record) : localRecord;
 }
 
 export async function updateRecordStatusOnServer(identifier, status, tone = "info", extras = {}) {
   const localRecord = updateRecordStatus(identifier, status, tone, extras);
   const result = await runDatabaseAction("updateRecordStatus", { identifier, status, tone, extras });
-  return result.record || localRecord;
+  return result.record ? upsertRecord(result.record) : localRecord;
 }
 
 export async function upsertCustomerOnServer(customer) {
   const localCustomer = upsertCustomer(customer);
   const result = await runDatabaseAction("upsertCustomer", { customer });
-  return result.customer || localCustomer;
+  return result.customer ? upsertCustomer(result.customer) : localCustomer;
 }

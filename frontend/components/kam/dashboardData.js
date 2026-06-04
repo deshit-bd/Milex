@@ -3,7 +3,7 @@ import { FiBarChart2, FiBriefcase, FiCheckSquare, FiGrid, FiStar, FiUsers } from
 export const NAV_ITEMS = [
   { label: "Dashboard", icon: FiGrid, href: "/kam/dashboard" },
   { label: "Recommendations", icon: FiStar, href: "/kam/recommendations" },
-  { label: "Task Queue & Record", icon: FiCheckSquare, href: "#" },
+  { label: "Task Queue & Record", icon: FiCheckSquare, href: "/kam/tasks" },
   { label: "Customers", icon: FiUsers, href: "/kam/customers" },
 ];
 

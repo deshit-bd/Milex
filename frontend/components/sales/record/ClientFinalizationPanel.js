@@ -9,11 +9,29 @@ import {
 } from "./recordData";
 import { updateRecordStatusOnServer, upsertCustomerOnServer } from "@/lib/database";
 
-export default function ClientFinalizationPanel({ record, onStageChange }) {
+function getDateAfterDays(days) {
+  const date = new Date();
+  date.setDate(date.getDate() + days);
+  return date.toISOString().slice(0, 10);
+}
+
+function getToday() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function withDefaultExpiryDates(documents) {
+  const today = getToday();
+  return documents.map((document) => ({
+    ...document,
+    expiryDate: document.expiryDate || today,
+  }));
+}
+
+export default function ClientFinalizationPanel({ record, onStageChange, onFinalizationChange }) {
   const [stage, setStage] = useState("client-decision");
   const [rejectReason, setRejectReason] = useState("");
   const [profile, setProfile] = useState(FINAL_PROFILE_INITIAL);
-  const [documents, setDocuments] = useState(LEGAL_DOCUMENTS_INITIAL);
+  const [documents, setDocuments] = useState(() => withDefaultExpiryDates(LEGAL_DOCUMENTS_INITIAL));
 
   useEffect(() => {
     const saved = record.finalization;
@@ -25,6 +43,9 @@ export default function ClientFinalizationPanel({ record, onStageChange }) {
       LEGAL_DOCUMENTS_INITIAL.map((item) => ({
         ...item,
         ...(saved.documents || []).find((savedItem) => savedItem.id === item.id),
+      })).map((document) => ({
+        ...document,
+        expiryDate: document.expiryDate || getToday(),
       }))
     );
     onStageChange?.(saved.stage || "client-decision");
@@ -46,10 +67,20 @@ export default function ClientFinalizationPanel({ record, onStageChange }) {
     });
     setStage(nextStage);
     onStageChange?.(nextStage);
+    onFinalizationChange?.(payload);
   }
 
   async function agreeClient() {
-    await persist("final-profile", profile, documents, rejectReason, "FINAL PROFILE DATA", "info");
+    if (!profile.signedAgreementFile) {
+      Swal.fire({
+        icon: "warning",
+        title: "Signed agreement required",
+        text: "Upload the signed agreement before moving to account profile setup.",
+        confirmButtonColor: "#078b4d",
+      });
+      return;
+    }
+    await persist("final-profile", profile, documents, rejectReason, "PENDING_PROFILE", "info");
     Swal.fire({ icon: "success", title: "Agreement signed", text: "Final account profile can now be completed.", confirmButtonColor: "#078b4d" });
   }
 
@@ -58,7 +89,24 @@ export default function ClientFinalizationPanel({ record, onStageChange }) {
       Swal.fire({ icon: "warning", title: "Reject reason required", confirmButtonColor: "#078b4d" });
       return;
     }
-    await persist("client-rejected", profile, documents, rejectReason, "OFFER REJECTED (REVISION REQUIRED)", "danger");
+    const payload = {
+      identifier: record.identifier,
+      accountName: record.accountName,
+      stage: "client-rejected",
+      rejectReason,
+      profile,
+      documents: withDefaultExpiryDates(documents),
+      updatedAt: new Date().toISOString(),
+    };
+    await updateRecordStatusOnServer(record.identifier, "OFFER REJECTED (REVISION REQUIRED)", "danger", {
+      accountName: record.accountName,
+      revision: "R-1",
+      revisionNote: rejectReason,
+      finalization: payload,
+    });
+    setStage("client-rejected");
+    onStageChange?.("client-rejected");
+    onFinalizationChange?.(payload);
     Swal.fire({ icon: "info", title: "Offer rejected", text: "Revision has been triggered for Sales Coordinator.", confirmButtonColor: "#078b4d" });
   }
 
@@ -72,20 +120,40 @@ export default function ClientFinalizationPanel({ record, onStageChange }) {
       ...profile,
       accountMode,
       provisionalReason: accountMode === "Regular Account" ? "" : profile.provisionalReason,
+      provisionalExpiryDate: accountMode === "Provisional Account" ? profile.provisionalExpiryDate || getDateAfterDays(30) : "",
     };
     setProfile(nextProfile);
     persist(stage, nextProfile);
   }
 
+  function updateSignedAgreement(event) {
+    const fileName = event.target.files[0]?.name || "";
+    const nextProfile = { ...profile, signedAgreementFile: fileName };
+    const nextDocuments = documents.map((document) =>
+      document.id === "signed-agreement" ? { ...document, fileName } : document
+    );
+    setProfile(nextProfile);
+    setDocuments(nextDocuments);
+    persist(stage, nextProfile, nextDocuments);
+  }
+
   async function saveProfile() {
-    await persist("final-profile", profile);
+    await persist("final-profile", profile, documents, rejectReason, "PENDING_PROFILE", "info");
     Swal.fire({ icon: "success", title: "Draft saved", timer: 900, showConfirmButton: false });
   }
 
   async function continueToDocuments(event) {
     event.preventDefault();
     if (!event.currentTarget.reportValidity()) return;
-    await persist("documents", profile, documents, rejectReason, "CLIENT FINAL DATA UPDATE", "info");
+    const nextProfile = {
+      ...profile,
+      provisionalExpiryDate:
+        profile.accountMode === "Provisional Account"
+          ? profile.provisionalExpiryDate || getDateAfterDays(30)
+          : "",
+    };
+    setProfile(nextProfile);
+    await persist("documents", nextProfile, documents, rejectReason, "CLIENT FINAL DATA UPDATE", "info");
   }
 
   function updateDocument(id, field, value) {
@@ -111,6 +179,8 @@ export default function ClientFinalizationPanel({ record, onStageChange }) {
       customerId: record.identifier,
       accountName: record.accountName,
       status: "ACTIVE & DISTRIBUTED",
+      accountMode: profile.accountMode,
+      provisionalExpiryDate: profile.provisionalExpiryDate,
     });
     await persist("activated", profile, documents, rejectReason, "ACTIVE & DISTRIBUTED", "success");
     Swal.fire({
@@ -137,7 +207,7 @@ export default function ClientFinalizationPanel({ record, onStageChange }) {
           <span><FiFileText /> <strong>Supporting Documentation</strong></span>
           <button type="button" onClick={() => window.print()}><FiPrinter /> Print Profile</button>
         </header>
-        <p>Please upload high-resolution PDF or image files for each category. Maximum file size: 10MB.</p>
+        <p>Dates default to today. Update any legal expiry date if the document expires later. Maximum file size: 10MB.</p>
         <div className="document-grid">
           {documents.map((document) => (
             <article className="document-tile" key={document.id}>
@@ -170,37 +240,52 @@ export default function ClientFinalizationPanel({ record, onStageChange }) {
     );
   }
 
-  if (stage === "final-profile") {
+  if (stage === "final-profile" && profile.signedAgreementFile) {
     return (
       <form className="finalization-card profile-panel" onSubmit={continueToDocuments}>
         <header><FiCheckCircle /> <strong>Final Account Profile Data</strong></header>
-        <p>Agreement is signed. Complete the final tax and operational details to activate the account.</p>
-        <fieldset className="account-mode-group">
-          <legend>Account Configuration Mode</legend>
+        <div className="agreement-complete-banner">
+          <FiCheckCircle />
           <div>
-            {["Regular Account", "Provisional Account"].map((accountMode) => (
+            <strong>Customer Signature &amp; Agreement Completed</strong>
+            <p>Signed agreement uploaded: {profile.signedAgreementFile}. Status is now PENDING_PROFILE.</p>
+          </div>
+        </div>
+        <p>Status: PENDING_PROFILE. Complete account mode, tax info, final limits, and legal expiry details.</p>
+        <fieldset className="account-mode-group">
+          <legend>Are all mandatory signed documents available?</legend>
+          <div>
+            {[
+              ["Regular Account", "Yes - Regular Account"],
+              ["Provisional Account", "No - Provisional Account"],
+            ].map(([accountMode, label]) => (
               <button
                 key={accountMode}
                 type="button"
                 className={profile.accountMode === accountMode ? "active" : ""}
                 onClick={() => setAccountMode(accountMode)}
               >
-                {accountMode}
+                {label}
               </button>
             ))}
           </div>
         </fieldset>
         {profile.accountMode === "Provisional Account" && (
-          <label className="provisional-reason">
-            Reason of Provisional Account Mandatory
-            <textarea
-              name="provisionalReason"
-              placeholder="ex. Managing Director Sign Missing"
-              value={profile.provisionalReason}
-              onChange={updateProfile}
-              required
-            />
-          </label>
+          <>
+            <label className="provisional-reason">
+              Reason of Provisional Account Mandatory
+              <textarea
+                name="provisionalReason"
+                placeholder="ex. Managing Director Sign Missing"
+                value={profile.provisionalReason}
+                onChange={updateProfile}
+                required
+              />
+            </label>
+            <div className="provisional-expiry-alert">
+              Strict 30-Day Expiry Timer: {profile.provisionalExpiryDate || getDateAfterDays(30)}
+            </div>
+          </>
         )}
         <div className="profile-grid">
           <label>Name of Managing Partner<input name="managingPartner" value={profile.managingPartner} onChange={updateProfile} required /></label>
@@ -224,12 +309,17 @@ export default function ClientFinalizationPanel({ record, onStageChange }) {
   return (
     <section className="finalization-card decision-panel">
       <header><FiCheckCircle /> <strong>Required Action</strong></header>
-      <p>1. Action Required: Print Documents</p>
+      <p>1. Action Required: Generate &amp; Print Documents</p>
       <div className="print-actions">
         <button type="button" onClick={() => window.print()}><FiPrinter /> Reprint Offer</button>
-        <button type="button" onClick={() => Swal.fire({ icon: "success", title: "Agreement printed", timer: 900, showConfirmButton: false })}><FiPrinter /> Print Agreement</button>
+        <button type="button" onClick={() => Swal.fire({ icon: "success", title: "Service Level Agreement generated", text: "Print the SLA PDF and collect the customer signature.", confirmButtonColor: "#078b4d" })}><FiPrinter /> Generate SLA PDF</button>
       </div>
-      <p>2. Agreement Signature Status</p>
+      <p>2. Upload Signed Agreement</p>
+      <label className="signed-agreement-upload">
+        <FiUploadCloud /> {profile.signedAgreementFile || "Upload signed agreement"}
+        <input type="file" accept=".pdf,.png,.jpg,.jpeg" onChange={updateSignedAgreement} />
+      </label>
+      <p>3. Agreement Signature Status</p>
       <button className="customer-agreed" type="button" onClick={agreeClient}><FiCheckCircle /> Agreement Signed - Continue</button>
       <label className="reject-reason">
         If no, enter reason & reject

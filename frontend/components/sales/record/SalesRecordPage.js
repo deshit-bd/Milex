@@ -16,7 +16,7 @@ import { SAMPLE_RECORD_DETAIL } from "./recordData";
 function getApprovedStatus(finalizationStage, offerDelivered, customerAccepted) {
   if (finalizationStage === "activated") return "PROFILE ACTIVATED";
   if (finalizationStage === "documents") return "CLIENT FINAL DATA UPDATE";
-  if (finalizationStage === "final-profile") return "OFFER DELIVERED (PENDING AGREEMENT)";
+  if (finalizationStage === "final-profile") return "PENDING_PROFILE";
   if (finalizationStage === "client-rejected") return "OFFER REJECTED (REVISION REQUIRED)";
   if (customerAccepted) return "CLIENT ACCEPTED OFFER (PENDING AGREEMENT)";
   if (offerDelivered) return "OFFER DELIVERED (WAITING CUSTOMER RESPONSE)";
@@ -42,6 +42,11 @@ function buildRecordDetail(record = {}) {
       name: submitted.keyName || record.keyContact?.name || "",
       phone: submitted.keyMobile || record.keyContact?.phone || "",
       email: submitted.keyEmail || record.keyContact?.email || "",
+    },
+    seniorContact: {
+      name: submitted.seniorName || record.seniorContact?.name || "",
+      phone: submitted.seniorMobile || record.seniorContact?.phone || "",
+      email: submitted.seniorEmail || record.seniorContact?.email || "",
     },
     financialContact: {
       name: submitted.financialName || record.financialContact?.name || "",
@@ -82,9 +87,10 @@ export default function SalesRecordPage({ session, recordId }) {
         Boolean(parsedOfferDocument?.clientAccepted) ||
         status.includes("CLIENT ACCEPTED") ||
         Boolean(parsedFinalization);
-      setApproved(Boolean(parsedApproval?.status === "Approved" || currentRecord.status?.startsWith("APPROVED")));
-      setRevisionRequested(Boolean(parsedApproval?.status === "Revision Requested" || currentRecord.status === "REVISION REQUESTED BY LM"));
-      setRevisionNote(parsedApproval?.note || currentRecord.revisionNote || "");
+      const clientRejected = parsedFinalization?.stage === "client-rejected" || status === "OFFER REJECTED (REVISION REQUIRED)";
+      setApproved(Boolean((parsedApproval?.status === "Approved" || currentRecord.status?.startsWith("APPROVED")) && !clientRejected));
+      setRevisionRequested(Boolean(parsedApproval?.status === "Revision Requested" || currentRecord.status === "REVISION REQUESTED BY LM" || clientRejected));
+      setRevisionNote(parsedApproval?.note || currentRecord.revisionNote || currentRecord.finalization?.rejectReason || currentRecord.offerRejectReason || "");
       setRateForwarded(Boolean(parsedRateAction));
       setOfferDelivered(hasDeliveredOffer);
       setCustomerAccepted(hasCustomerAccepted);
@@ -100,6 +106,10 @@ export default function SalesRecordPage({ session, recordId }) {
 
   function handleCustomerAccepted() {
     setCustomerAccepted(true);
+  }
+
+  function handleFinalizationChange(finalization) {
+    setRecord((current) => ({ ...current, finalization }));
   }
 
   return (
@@ -119,25 +129,20 @@ export default function SalesRecordPage({ session, recordId }) {
           <div className="record-layout">
             <div>
               <AccountInfo record={record} />
-              {approved && customerAccepted && finalizationStage && finalizationStage !== "client-decision" && (
+              {approved && finalizationStage && finalizationStage !== "client-decision" && (
                 <ClientFinalizationPanel
                   record={record}
                   onStageChange={setFinalizationStage}
+                  onFinalizationChange={handleFinalizationChange}
                 />
               )}
             </div>
             <aside>
-              {approved && customerAccepted && (!finalizationStage || finalizationStage === "client-decision") ? (
-                <ClientFinalizationPanel
-                  record={record}
-                  onStageChange={setFinalizationStage}
-                />
-              ) : approved ? (
+              {approved ? (
                 <ApprovedOfferActions
                   record={record}
                   offerSent={offerDelivered}
                   onDocumentGenerated={handleDocumentGenerated}
-                  onCustomerAccepted={handleCustomerAccepted}
                 />
               ) : revisionRequested ? (
                 <RateActionBox

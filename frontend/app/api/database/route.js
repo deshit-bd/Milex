@@ -19,6 +19,17 @@ const INITIAL_DB = {
   nextCustomerNumber: 1,
 };
 
+function getDevTestDb() {
+  if (!globalThis.__milexDevTestDb) {
+    globalThis.__milexDevTestDb = structuredClone(INITIAL_DB);
+  }
+  return globalThis.__milexDevTestDb;
+}
+
+function isDevTestRequest(request) {
+  return process.env.NODE_ENV !== "production" && request.headers.get("x-milex-test-local") === "1";
+}
+
 function json(data, status = 200) {
   return NextResponse.json(data, { status });
 }
@@ -36,6 +47,10 @@ async function getDb() {
   return readSheetDatabase();
 }
 
+function normalizeIdentifier(identifier) {
+  return identifier ? String(identifier).replace(/^MLX-/, "MLX") : "";
+}
+
 export async function GET() {
   try {
     return json({ ok: true, db: await getDb() });
@@ -48,8 +63,88 @@ export async function POST(request) {
   try {
     const { type, payload = {} } = await request.json();
 
+    if (isDevTestRequest(request)) {
+      const db = getDevTestDb();
+      const upsertRecord = (record) => {
+        const index = db.records.findIndex((item) => item.identifier === record.identifier);
+        const nextRecord = { revision: "New", tone: "info", ...db.records[index], ...record };
+        if (index >= 0) db.records[index] = nextRecord;
+        else db.records.push(nextRecord);
+        return nextRecord;
+      };
+
+      if (type === "resetDatabase") {
+        globalThis.__milexDevTestDb = structuredClone(INITIAL_DB);
+        return json({ ok: true, db: getDevTestDb() });
+      }
+
+      if (type === "submitRecommendation") {
+        const recommendation = { ...(payload.record || {}) };
+        recommendation.identifier = normalizeIdentifier(recommendation.identifier);
+        const record = upsertRecord({
+          ...recommendation,
+          identifier: recommendation.identifier,
+          accountName: recommendation.accountName,
+          status: "PENDING RATE PREPARATION",
+          revision: "New",
+          tone: "info",
+          recommendation,
+          rateAction: null,
+          lineManagerApproval: null,
+          offerDocument: null,
+          finalization: null,
+          revisionNote: "",
+        });
+        return json({ ok: true, record, db });
+      }
+
+      if (type === "forwardRate") {
+        const identifier = normalizeIdentifier(payload.identifier);
+        const existing = db.records.find((item) => item.identifier === identifier);
+        const record = upsertRecord({
+          ...existing,
+          accountName: payload.accountName || existing?.accountName || "",
+          identifier,
+          status: "PENDING LM APPROVAL",
+          tone: "warning",
+          rateAction: { ...(payload.rateAction || {}), identifier },
+          lineManagerApproval: null,
+          lineManagerDecision: "",
+          lineManagerDecidedAt: "",
+          revisionNote: "",
+          rateForwardedAt: new Date().toISOString(),
+        });
+        return json({ ok: true, record, db });
+      }
+
+      if (type === "updateRecordStatus") {
+        const identifier = normalizeIdentifier(payload.identifier);
+        const record = upsertRecord({
+          ...(payload.extras || {}),
+          identifier,
+          status: payload.status,
+          tone: payload.tone || "info",
+        });
+        return json({ ok: true, record, db });
+      }
+
+      if (type === "upsertCustomer") {
+        const customer = { status: "ACTIVE & DISTRIBUTED", ...(payload.customer || {}) };
+        const index = db.customers.findIndex((item) => item.customerId === customer.customerId);
+        if (index >= 0) db.customers[index] = { ...db.customers[index], ...customer };
+        else db.customers.push(customer);
+        return json({ ok: true, customer, db });
+      }
+
+      if (type === "deleteRecord") {
+        const identifier = normalizeIdentifier(payload.identifier);
+        db.records = db.records.filter((item) => item.identifier !== identifier);
+        return json({ ok: true, db });
+      }
+    }
+
     if (type === "generateCustomerCode") {
-      return json({ ok: true, identifier: await generateSheetCustomerCode(), db: await getDb() });
+      return json({ ok: true, identifier: await generateSheetCustomerCode() });
     }
 
     if (type === "resetDatabase") {
@@ -58,28 +153,30 @@ export async function POST(request) {
 
     if (type === "writeWorkflowItem") {
       await writeSheetWorkflowItem(payload.key, payload.value);
-      return json({ ok: true, db: await getDb() });
+      return json({ ok: true });
     }
 
     if (type === "deleteWorkflowItem") {
       await deleteSheetWorkflowItem(payload.key);
-      return json({ ok: true, db: await getDb() });
+      return json({ ok: true });
     }
 
     if (type === "upsertRecord") {
+      payload.record.identifier = normalizeIdentifier(payload.record.identifier);
       const db = await getDb();
       const existing = db.records.find((item) => item.identifier === payload.record.identifier);
       const record = { revision: "New", tone: "info", ...existing, ...payload.record };
       await upsertSheetRecord(record);
-      return json({ ok: true, record, db: await getDb() });
+      return json({ ok: true, record });
     }
 
     if (type === "deleteRecord") {
       await deleteSheetRecord(payload.identifier);
-      return json({ ok: true, db: await getDb() });
+      return json({ ok: true });
     }
 
     if (type === "updateRecordStatus") {
+      payload.identifier = normalizeIdentifier(payload.identifier);
       const db = await getDb();
       const existing = db.records.find((item) => item.identifier === payload.identifier);
       const record = {
@@ -92,12 +189,14 @@ export async function POST(request) {
         tone: payload.tone || "info",
       };
       await upsertSheetRecord(record);
-      return json({ ok: true, record, db: await getDb() });
+      return json({ ok: true, record });
     }
 
     if (type === "forwardRate") {
+      payload.identifier = normalizeIdentifier(payload.identifier);
       const db = await getDb();
       const existing = db.records.find((item) => item.identifier === payload.identifier);
+      const rateAction = { ...(payload.rateAction || {}), identifier: payload.identifier };
       const record = {
         revision: existing?.revision || "New",
         tone: "warning",
@@ -106,7 +205,7 @@ export async function POST(request) {
         identifier: payload.identifier,
         status: "PENDING LM APPROVAL",
         tone: "warning",
-        rateAction: payload.rateAction,
+        rateAction,
         lineManagerApproval: null,
         lineManagerDecision: "",
         lineManagerDecidedAt: "",
@@ -114,7 +213,7 @@ export async function POST(request) {
         rateForwardedAt: new Date().toISOString(),
       };
       await upsertSheetRecord(record);
-      return json({ ok: true, record, db: await getDb() });
+      return json({ ok: true, record });
     }
 
     if (type === "upsertCustomer") {
@@ -122,11 +221,12 @@ export async function POST(request) {
       const existing = db.customers.find((item) => item.customerId === payload.customer.customerId);
       const customer = { status: "ACTIVE & DISTRIBUTED", ...existing, ...payload.customer };
       await upsertSheetCustomer(customer);
-      return json({ ok: true, customer, db: await getDb() });
+      return json({ ok: true, customer });
     }
 
     if (type === "submitRecommendation") {
       const recommendation = payload.record;
+      recommendation.identifier = normalizeIdentifier(recommendation.identifier);
       const record = {
         ...recommendation,
         identifier: recommendation.identifier,
@@ -142,7 +242,7 @@ export async function POST(request) {
         revisionNote: "",
       };
       await upsertSheetRecord(record);
-      return json({ ok: true, record, db: await getDb() });
+      return json({ ok: true, record });
     }
 
     return json({ ok: false, error: `Unknown action: ${type}` }, 400);

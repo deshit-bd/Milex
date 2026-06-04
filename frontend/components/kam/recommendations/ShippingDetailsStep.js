@@ -1,5 +1,17 @@
-import { FiArrowLeft, FiArrowRight, FiBriefcase, FiLock, FiTruck } from "react-icons/fi";
+import { FiArrowLeft, FiArrowRight, FiBriefcase, FiLock, FiPlus, FiTrash2, FiTruck } from "react-icons/fi";
 import FormField from "./FormField";
+
+const COUNTRY_OPTIONS = [
+  "Bangladesh",
+  "China",
+  "Dubai",
+  "India",
+  "Singapore",
+  "Turkey",
+  "United Arab Emirates",
+  "United Kingdom",
+  "United States",
+];
 
 export default function ShippingDetailsStep({ form, onChange, onSave, onNext, onPrevious }) {
   function addRoute() {
@@ -18,6 +30,11 @@ export default function ShippingDetailsStep({ form, onChange, onSave, onNext, on
     onChange({ target: { name: "additionalRoutes", value: routes } });
   }
 
+  function removeRoute(index) {
+    const routes = (form.additionalRoutes || []).filter((_, routeIndex) => routeIndex !== index);
+    onChange({ target: { name: "additionalRoutes", value: routes } });
+  }
+
   return (
     <section className="form-card shipping-card">
       <div className="form-card-title shipping-title">
@@ -33,6 +50,15 @@ export default function ShippingDetailsStep({ form, onChange, onSave, onNext, on
               <label><input type="checkbox" name="shipmentNonDocument" checked={form.shipmentNonDocument} onChange={onChange} /> Non-Document</label>
               <label><input type="checkbox" name="shipmentOthers" checked={form.shipmentOthers} onChange={onChange} /> Others</label>
             </div>
+            {form.shipmentOthers && (
+              <input
+                className="shipment-other-input"
+                name="shipmentOtherText"
+                placeholder="Please type shipment type here"
+                value={form.shipmentOtherText}
+                onChange={onChange}
+              />
+            )}
           </div>
           <FormField label="Rate For" name="rateFor">
             <select name="rateFor" value={form.rateFor} onChange={onChange}>
@@ -45,11 +71,7 @@ export default function ShippingDetailsStep({ form, onChange, onSave, onNext, on
           <FormField label="Primary Destination Country" name="destinationCountry">
             <select name="destinationCountry" value={form.destinationCountry} onChange={onChange}>
               <option value="">Select country</option>
-              <option>Bangladesh</option>
-              <option>United States</option>
-              <option>United Kingdom</option>
-              <option>United Arab Emirates</option>
-              <option>Singapore</option>
+              {COUNTRY_OPTIONS.map((country) => <option key={country}>{country}</option>)}
             </select>
           </FormField>
           <FormField label="Avg Monthly Volume (CBM/TEU)" name="monthlyVolume">
@@ -66,16 +88,20 @@ export default function ShippingDetailsStep({ form, onChange, onSave, onNext, on
         {(form.additionalRoutes || []).map((route, index) => (
           <div className="additional-route" key={`route-${index}`}>
             <strong>Route {index + 1}</strong>
-            <input placeholder="Country" value={route.country || route.destination || ""} onChange={(event) => updateRoute(index, "country", event.target.value)} />
+            <input list="milex-country-options" placeholder="Country" value={route.country || route.destination || ""} onChange={(event) => updateRoute(index, "country", event.target.value)} />
             <select value={route.rateFor || ""} onChange={(event) => updateRoute(index, "rateFor", event.target.value)}>
               <option value="">Select rate for</option>
               <option>Import</option>
               <option>Export</option>
               <option>Import &amp; Export</option>
             </select>
+            <button type="button" aria-label={`Remove route ${index + 1}`} onClick={() => removeRoute(index)}><FiTrash2 /></button>
           </div>
         ))}
-        <button className="add-route" type="button" onClick={addRoute}>+ Add Route</button>
+        <datalist id="milex-country-options">
+          {COUNTRY_OPTIONS.map((country) => <option key={country} value={country} />)}
+        </datalist>
+        <button className="add-route" type="button" onClick={addRoute}><FiPlus /> Add Country Rate</button>
       </div>
       <div className="form-actions shipping-actions">
         <button className="outline-action" type="button" onClick={onPrevious}><FiArrowLeft /> Previous Step</button>
