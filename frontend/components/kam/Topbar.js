@@ -1,17 +1,42 @@
 "use client";
 
 import { useState } from "react";
-import { FiBell, FiHelpCircle, FiLogOut, FiSearch, FiSettings } from "react-icons/fi";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { FiBell, FiHelpCircle, FiLogOut, FiMenu, FiSearch, FiSettings, FiX } from "react-icons/fi";
 import { logout } from "@/lib/auth";
+import { NAV_ITEMS } from "@/components/kam/dashboardData";
+import { SALES_NAV_ITEMS } from "@/components/sales/salesData";
+import { LINE_MANAGER_NAV_ITEMS } from "@/components/line-manager/lineManagerData";
+
+function getNavItems(role) {
+  if (role === "KAM") return NAV_ITEMS;
+  if (role === "Line Manager") return LINE_MANAGER_NAV_ITEMS;
+  return SALES_NAV_ITEMS;
+}
 
 export default function Topbar({ session }) {
   const [profileOpen, setProfileOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const pathname = usePathname();
+  const navItems = getNavItems(session.role);
 
   return (
     <header className="topbar">
-      <div className="search-box">
-        <FiSearch />
-        <input type="search" placeholder="Search accounts, leads, or proposals..." />
+      <div className="topbar-main">
+        <button
+          className="mobile-menu-button"
+          type="button"
+          aria-label={menuOpen ? "Close navigation menu" : "Open navigation menu"}
+          aria-expanded={menuOpen}
+          onClick={() => setMenuOpen((open) => !open)}
+        >
+          {menuOpen ? <FiX /> : <FiMenu />}
+        </button>
+        <div className="search-box">
+          <FiSearch />
+          <input type="search" placeholder="Search accounts, leads, or proposals..." />
+        </div>
       </div>
       <div className="topbar-actions">
         <button type="button" aria-label="Help"><FiHelpCircle /></button>
@@ -28,6 +53,25 @@ export default function Topbar({ session }) {
           )}
         </div>
       </div>
+      {menuOpen && (
+        <>
+          <button className="mobile-menu-backdrop" type="button" aria-label="Close navigation menu" onClick={() => setMenuOpen(false)} />
+          <nav className="mobile-menu-panel" aria-label={`${session.role} mobile navigation`}>
+            <img className="mobile-menu-logo" src="/milex-logo.svg" alt="MileX" />
+            {navItems.map(({ label, icon: Icon, href }) => (
+              <Link
+                className={`mobile-menu-item ${pathname === href ? "active" : ""}`}
+                href={href}
+                key={label}
+                onClick={() => setMenuOpen(false)}
+              >
+                <Icon />
+                <span>{label}</span>
+              </Link>
+            ))}
+          </nav>
+        </>
+      )}
     </header>
   );
 }

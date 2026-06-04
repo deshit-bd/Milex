@@ -5,3 +5,5 @@ out
 .env
 air-milex-*.json
 npm-debug.log*
+
+.vercel

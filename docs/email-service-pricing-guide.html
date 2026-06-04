@@ -1,0 +1,318 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>MileX Email Service Pricing and Purchase Guide</title>
+  <style>
+    @page { size: A4; margin: 18mm; }
+    body {
+      font-family: Arial, Helvetica, sans-serif;
+      color: #172033;
+      line-height: 1.45;
+      margin: 0;
+      background: #ffffff;
+    }
+    h1 { font-size: 28px; margin: 0 0 8px; color: #0f3d3e; }
+    h2 { font-size: 18px; margin: 26px 0 10px; color: #0f3d3e; border-bottom: 1px solid #cfd8dc; padding-bottom: 5px; }
+    h3 { font-size: 15px; margin: 18px 0 6px; color: #203040; }
+    p { margin: 7px 0; }
+    .meta { color: #5f6f7a; font-size: 12px; margin-bottom: 18px; }
+    .callout {
+      border: 1px solid #b8e2d0;
+      background: #ecfff7;
+      padding: 12px 14px;
+      border-radius: 6px;
+      margin: 14px 0 18px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 10px 0 16px;
+      font-size: 12px;
+    }
+    th {
+      background: #0f3d3e;
+      color: white;
+      text-align: left;
+      padding: 8px;
+      border: 1px solid #0f3d3e;
+    }
+    td {
+      padding: 8px;
+      border: 1px solid #d9e1e5;
+      vertical-align: top;
+    }
+    tr:nth-child(even) td { background: #f7faf9; }
+    ul, ol { margin: 7px 0 12px 22px; padding: 0; }
+    li { margin: 4px 0; }
+    .small { font-size: 11px; color: #5f6f7a; }
+    .badge {
+      display: inline-block;
+      background: #0f8f62;
+      color: white;
+      padding: 2px 7px;
+      border-radius: 999px;
+      font-size: 10px;
+      font-weight: bold;
+      margin-left: 6px;
+    }
+    .warning {
+      border-left: 4px solid #d69400;
+      background: #fff8e8;
+      padding: 10px 12px;
+      margin: 12px 0;
+    }
+    a { color: #064fb0; text-decoration: none; }
+    .page-break { page-break-before: always; }
+  </style>
+</head>
+<body>
+  <h1>MileX Email Service Pricing and Purchase Guide</h1>
+  <p class="meta">Prepared for MileX project. Pricing checked on June 4, 2026. Prices can change, so confirm in each provider dashboard before payment.</p>
+
+  <div class="callout">
+    <strong>Short recommendation:</strong> Low budget hole <strong>Mailgun Free</strong> diye start koro. Jodi paid korte hoy and tomar preference Mailgun/Postmark hoy, tahole <strong>Mailgun Basic $15/mo</strong> is the best starting choice. Postmark $15/mo is excellent for pure transactional delivery, but its free tier is much smaller.
+  </div>
+
+  <h2>What MileX Needs</h2>
+  <p>MileX er email mainly transactional email: offer letter send, rate forwarded notification, line manager approval/revision notification, and customer activation confirmation.</p>
+  <p>Important requirements:</p>
+  <ul>
+    <li>Customer email recipient will come from KAM Recommendation form field: Email Address.</li>
+    <li>Internal recipients can be fixed env values: SALES_EMAIL, LINE_MANAGER_EMAIL, KAM_EMAIL.</li>
+    <li>Email should be sent from backend API, not directly from frontend.</li>
+    <li>Sender domain should be verified with SPF/DKIM for better inbox delivery.</li>
+  </ul>
+
+  <h2>Price Comparison</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Service</th>
+        <th>Free Plan</th>
+        <th>Starting Paid</th>
+        <th>Included Emails</th>
+        <th>Extra / Overage</th>
+        <th>Fit for MileX</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Mailgun</strong> <span class="badge">Preferred</span></td>
+        <td>$0, 100 emails/day</td>
+        <td>$15/mo Basic</td>
+        <td>10,000 emails/mo</td>
+        <td>From $1.80 per 1,000 extra emails on Basic</td>
+        <td>Best low-budget choice among your preferred options. API and SMTP both available.</td>
+      </tr>
+      <tr>
+        <td><strong>Postmark</strong> <span class="badge">Preferred</span></td>
+        <td>$0, 100 emails/mo</td>
+        <td>$15/mo</td>
+        <td>10,000 emails/mo</td>
+        <td>$1.80 per 1,000 extra emails</td>
+        <td>Very strong for transactional emails. Better if delivery quality matters more than free usage.</td>
+      </tr>
+      <tr>
+        <td><strong>Resend</strong></td>
+        <td>$0, 3,000 emails/mo, 100/day limit</td>
+        <td>$20/mo Pro</td>
+        <td>50,000 emails/mo</td>
+        <td>$0.90 per 1,000 extra emails</td>
+        <td>Best developer experience for Next.js, but not your preferred provider.</td>
+      </tr>
+      <tr>
+        <td><strong>SendGrid</strong></td>
+        <td>$0 trial/free plan varies by current offer</td>
+        <td>From $19.95/mo Essentials</td>
+        <td>Often starts around 50,000 emails/mo on Essentials</td>
+        <td>Plan-based</td>
+        <td>Popular but setup and reputation handling can feel heavier.</td>
+      </tr>
+      <tr>
+        <td><strong>Amazon SES</strong></td>
+        <td>Up to 3,000 message charges/mo for first 12 months for new AWS customers</td>
+        <td>No monthly minimum</td>
+        <td>Pay as used</td>
+        <td>$0.10 per 1,000 outbound emails plus possible data/add-on costs</td>
+        <td>Cheapest at scale, but setup is the most technical.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p class="small">Meaning of overage: If your plan includes 10,000 emails and you send 12,000, the extra 2,000 emails are charged separately. Example: $1.80 per 1,000 means 2,000 extra emails costs $3.60.</p>
+
+  <h2>Best Choice for Your Project</h2>
+  <h3>Best low-budget start: Mailgun Free</h3>
+  <p>Jodi daily email volume 100 er niche hoy, Mailgun Free diye start kora best. MileX initial workflow-e offer letter and internal notifications likely low volume, so this can work during early use.</p>
+
+  <h3>Best paid option from your preference: Mailgun Basic $15/mo</h3>
+  <p>Mailgun Basic and Postmark both $15/mo and 10,000 emails/mo include kore. But Mailgun free tier 100/day, Postmark free only 100/month. Budget kom hole Mailgun gives more room for testing and early production.</p>
+
+  <h3>Best delivery quality: Postmark $15/mo</h3>
+  <p>Postmark is very strong for transactional email. If MileX offer letter delivery is business-critical and budget allows $15/mo, Postmark is excellent. But testing/free usage is limited.</p>
+
+  <h3>Final recommendation</h3>
+  <p><strong>Start with Mailgun Free.</strong> After real usage starts, upgrade to <strong>Mailgun Basic $15/mo</strong>. If you later face inbox/spam issues or want stronger transactional delivery, switch to <strong>Postmark $15/mo</strong>.</p>
+
+  <div class="page-break"></div>
+
+  <h2>Purchase / Setup Process - Mailgun</h2>
+  <ol>
+    <li>Go to <a href="https://www.mailgun.com/pricing/">mailgun.com/pricing</a>.</li>
+    <li>Click Try for free or Get started under Basic.</li>
+    <li>Create Mailgun account and verify your email.</li>
+    <li>Add your sending domain. Recommended sender: no-reply@yourdomain.com.</li>
+    <li>Mailgun will show DNS records for SPF/DKIM/tracking. Add these records in your domain DNS.</li>
+    <li>Wait until domain status becomes verified.</li>
+    <li>Create an API key from Mailgun dashboard.</li>
+    <li>Add environment variables in your app/server:
+      <ul>
+        <li>MAILGUN_API_KEY</li>
+        <li>MAILGUN_DOMAIN</li>
+        <li>EMAIL_FROM=no-reply@yourdomain.com</li>
+      </ul>
+    </li>
+    <li>In MileX backend, connect Generate & Email Offer Letter to Mailgun API.</li>
+    <li>Send first test email to your own Gmail and check Inbox/Spam.</li>
+  </ol>
+
+  <h2>Purchase / Setup Process - Postmark</h2>
+  <ol>
+    <li>Go to <a href="https://postmarkapp.com/pricing/">postmarkapp.com/pricing</a>.</li>
+    <li>Click Start free trial.</li>
+    <li>Create account and verify your email.</li>
+    <li>Create a Server for MileX transactional emails.</li>
+    <li>Add a Sender Signature or verify a full domain. Domain verification is better.</li>
+    <li>Add SPF/DKIM DNS records shown by Postmark.</li>
+    <li>Create or copy Server API Token.</li>
+    <li>Add environment variables:
+      <ul>
+        <li>POSTMARK_SERVER_TOKEN</li>
+        <li>EMAIL_FROM=no-reply@yourdomain.com</li>
+      </ul>
+    </li>
+    <li>Connect MileX backend email route with Postmark API.</li>
+    <li>Test offer letter email and check delivery logs in Postmark Activity.</li>
+  </ol>
+
+  <h2>Purchase / Setup Process - Resend</h2>
+  <ol>
+    <li>Go to <a href="https://resend.com/pricing">resend.com/pricing</a>.</li>
+    <li>Create account and verify email.</li>
+    <li>Add your sending domain.</li>
+    <li>Add DNS records for SPF/DKIM.</li>
+    <li>Create API key.</li>
+    <li>Add env variables:
+      <ul>
+        <li>RESEND_API_KEY</li>
+        <li>EMAIL_FROM=no-reply@yourdomain.com</li>
+      </ul>
+    </li>
+    <li>Use backend API to send customer offer letter emails.</li>
+  </ol>
+
+  <h2>Purchase / Setup Process - SendGrid</h2>
+  <ol>
+    <li>Go to <a href="https://sendgrid.com/en-us/pricing">sendgrid.com/en-us/pricing</a>.</li>
+    <li>Create account and choose Free Trial or Essentials plan.</li>
+    <li>Complete sender/domain authentication.</li>
+    <li>Add SPF/DKIM DNS records.</li>
+    <li>Create API key with Mail Send permission.</li>
+    <li>Add env variables:
+      <ul>
+        <li>SENDGRID_API_KEY</li>
+        <li>EMAIL_FROM=no-reply@yourdomain.com</li>
+      </ul>
+    </li>
+    <li>Connect backend API to SendGrid Mail Send API.</li>
+  </ol>
+
+  <h2>Purchase / Setup Process - Amazon SES</h2>
+  <ol>
+    <li>Create AWS account at <a href="https://aws.amazon.com/ses/">aws.amazon.com/ses</a>.</li>
+    <li>Open Amazon SES console and choose a region.</li>
+    <li>Verify your sending domain.</li>
+    <li>Add SPF/DKIM DNS records in your domain DNS.</li>
+    <li>Request production access because new SES accounts usually start in sandbox mode.</li>
+    <li>Create IAM user or access keys with SES send permission.</li>
+    <li>Add env variables:
+      <ul>
+        <li>AWS_ACCESS_KEY_ID</li>
+        <li>AWS_SECRET_ACCESS_KEY</li>
+        <li>AWS_REGION</li>
+        <li>EMAIL_FROM=no-reply@yourdomain.com</li>
+      </ul>
+    </li>
+    <li>Connect MileX backend API to Amazon SES.</li>
+  </ol>
+
+  <h2>How Email Will Work in MileX</h2>
+  <ol>
+    <li>KAM creates recommendation and enters customer Email Address.</li>
+    <li>Sales prepares rate and Line Manager approves.</li>
+    <li>Sales clicks Generate & Email Offer Letter.</li>
+    <li>MileX backend reads customer email from record.recommendation.emailAddress or record.emailAddress.</li>
+    <li>Backend sends email through Mailgun/Postmark API.</li>
+    <li>Database stores sent status: sentTo, sentAt, providerMessageId, and status OFFER DELIVERED (PENDING AGREEMENT).</li>
+  </ol>
+
+  <h2>Cost Examples</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Monthly Emails</th>
+        <th>Mailgun Basic</th>
+        <th>Postmark</th>
+        <th>Resend Pro</th>
+        <th>Amazon SES</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>500</td>
+        <td>$0 on Free if within 100/day, or $15 paid</td>
+        <td>$15 paid, or free only if under 100/mo</td>
+        <td>$0 free</td>
+        <td>About $0.05 after free tier rules</td>
+      </tr>
+      <tr>
+        <td>2,000</td>
+        <td>$0 on Free if within 100/day, or $15 paid</td>
+        <td>$15 paid</td>
+        <td>$0 free</td>
+        <td>About $0.20 after free tier rules</td>
+      </tr>
+      <tr>
+        <td>12,000</td>
+        <td>$15 + $3.60 overage = $18.60</td>
+        <td>$15 + $3.60 overage = $18.60</td>
+        <td>$20</td>
+        <td>About $1.20 plus possible attachment/data costs</td>
+      </tr>
+      <tr>
+        <td>50,000</td>
+        <td>Foundation $35/mo likely better than Basic overage</td>
+        <td>$15 + overage for 40,000 emails</td>
+        <td>$20</td>
+        <td>About $5 plus possible attachment/data costs</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="warning">
+    <strong>Important:</strong> Always verify domain DNS records. Without SPF/DKIM, customer offer letters may go to Spam. Also check billing dashboard because overage can be billed automatically.
+  </div>
+
+  <h2>Sources</h2>
+  <ul>
+    <li>Mailgun Pricing: <a href="https://www.mailgun.com/pricing/">https://www.mailgun.com/pricing/</a></li>
+    <li>Mailgun Overage Help: <a href="https://help.mailgun.com/hc/en-us/articles/6745531451547-What-happens-if-I-send-more-emails-than-my-monthly-plan-provides">Mailgun Help Center overage article</a></li>
+    <li>Postmark Pricing: <a href="https://postmarkapp.com/pricing/">https://postmarkapp.com/pricing/</a></li>
+    <li>Postmark Monthly Pricing Help: <a href="https://postmarkapp.com/support/article/1107-how-does-monthly-pricing-work">Postmark monthly pricing article</a></li>
+    <li>Resend Pricing: <a href="https://resend.com/docs/knowledge-base/what-is-resend-pricing">Resend pricing knowledge base</a></li>
+    <li>SendGrid Pricing: <a href="https://sendgrid.com/en-us/pricing">https://sendgrid.com/en-us/pricing</a></li>
+    <li>Amazon SES Pricing: <a href="https://aws.amazon.com/ses/pricing/">https://aws.amazon.com/ses/pricing/</a></li>
+  </ul>
+</body>
+</html>
