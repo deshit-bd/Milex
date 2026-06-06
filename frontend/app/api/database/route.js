@@ -18,6 +18,21 @@ const INITIAL_DB = {
   workflow: {},
   nextCustomerNumber: 1,
 };
+const CACHE_TTL_MS = 45_000;
+
+function getCachedDb() {
+  const cache = globalThis.__milexSheetDbCache;
+  if (!cache) return null;
+  return Date.now() < cache.expiresAt ? cache.db : null;
+}
+
+function setCachedDb(db) {
+  globalThis.__milexSheetDbCache = {
+    db,
+    expiresAt: Date.now() + CACHE_TTL_MS,
+  };
+  return db;
+}
 
 function getDevTestDb() {
   if (!globalThis.__milexDevTestDb) {
@@ -43,8 +58,13 @@ function friendlyError(error) {
   };
 }
 
-async function getDb() {
-  return readSheetDatabase();
+async function getDb({ force = false } = {}) {
+  if (!force) {
+    const cachedDb = getCachedDb();
+    if (cachedDb) return cachedDb;
+  }
+
+  return setCachedDb(await readSheetDatabase());
 }
 
 function normalizeIdentifier(identifier) {
@@ -55,6 +75,10 @@ export async function GET() {
   try {
     return json({ ok: true, db: await getDb() });
   } catch (error) {
+    const cache = globalThis.__milexSheetDbCache;
+    if (cache?.db) {
+      return json({ ok: true, db: cache.db, warning: error.message });
+    }
     return json({ ...friendlyError(error), db: INITIAL_DB }, 503);
   }
 }

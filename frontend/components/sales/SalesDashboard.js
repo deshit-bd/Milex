@@ -16,7 +16,7 @@ export default function SalesDashboard({ session }) {
               <p>Key Account Performance &amp; Activity</p>
             </div>
           </div>
-          <OverviewCards />
+          <OverviewCards session={session} />
           <SalesQueue />
         </div>
       </section>

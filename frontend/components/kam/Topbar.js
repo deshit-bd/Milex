@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { FiBell, FiHelpCircle, FiLogOut, FiMenu, FiSearch, FiSettings, FiX } from "react-icons/fi";
 import { logout } from "@/lib/auth";
 import { NAV_ITEMS } from "@/components/kam/dashboardData";
@@ -18,8 +18,36 @@ function getNavItems(role) {
 export default function Topbar({ session }) {
   const [profileOpen, setProfileOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const profileRef = useRef(null);
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const isPipelineView = searchParams.get("filter") === "pipeline";
   const navItems = getNavItems(session.role);
+
+  function isNavActive(href) {
+    return pathname === href && !(isPipelineView && href.endsWith("/tasks"));
+  }
+
+  useEffect(() => {
+    if (!profileOpen) return undefined;
+
+    function closeProfileMenu(event) {
+      if (profileRef.current?.contains(event.target)) return;
+      setProfileOpen(false);
+    }
+
+    function closeOnEscape(event) {
+      if (event.key === "Escape") setProfileOpen(false);
+    }
+
+    document.addEventListener("mousedown", closeProfileMenu);
+    document.addEventListener("keydown", closeOnEscape);
+
+    return () => {
+      document.removeEventListener("mousedown", closeProfileMenu);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [profileOpen]);
 
   return (
     <header className="topbar">
@@ -42,7 +70,7 @@ export default function Topbar({ session }) {
         <button type="button" aria-label="Help"><FiHelpCircle /></button>
         <button type="button" aria-label="Notifications"><FiBell /><i /></button>
         <button type="button" aria-label="Settings"><FiSettings /></button>
-        <div className="profile-wrap">
+        <div className="profile-wrap" ref={profileRef}>
           <button className="avatar-button" type="button" aria-label="Open profile menu" onClick={() => setProfileOpen((open) => !open)}>KH</button>
           {profileOpen && (
             <div className="profile-menu">
@@ -60,7 +88,7 @@ export default function Topbar({ session }) {
             <img className="mobile-menu-logo" src="/milex-logo.svg" alt="MileX" />
             {navItems.map(({ label, icon: Icon, href }) => (
               <Link
-                className={`mobile-menu-item ${pathname === href ? "active" : ""}`}
+                className={`mobile-menu-item ${isNavActive(href) ? "active" : ""}`}
                 href={href}
                 key={label}
                 onClick={() => setMenuOpen(false)}

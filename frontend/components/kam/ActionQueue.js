@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { FiClock } from "react-icons/fi";
 import { fetchDatabase } from "@/lib/database";
+import LoadingSpinner from "@/components/shared/LoadingSpinner";
 
 function isKamTask(record) {
   return [
@@ -18,10 +19,13 @@ function isKamTask(record) {
 export default function ActionQueue() {
   const router = useRouter();
   const [records, setRecords] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    setLoading(true);
     fetchDatabase().then((db) => {
       setRecords((db.records || []).filter(isKamTask));
+      setLoading(false);
     });
   }, []);
 
@@ -29,9 +33,11 @@ export default function ActionQueue() {
     <section className="queue-card">
       <header>
         <div><FiClock /><strong>Action Required Queue</strong></div>
-        <button type="button" onClick={() => router.push("/kam/tasks")}>View All</button>
+        <button type="button" onClick={() => router.push("/kam/tasks?filter=queue")}>View All</button>
       </header>
-      {records.length ? (
+      {loading ? (
+        <LoadingSpinner />
+      ) : records.length ? (
         <div className="sales-queue-item">
           <div>
             <h2>{records[0].accountName}</h2>

@@ -4,7 +4,9 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Sidebar from "@/components/kam/Sidebar";
 import Topbar from "@/components/kam/Topbar";
-import { fetchDatabase } from "@/lib/database";
+import { fetchDatabase, fetchServerDatabase } from "@/lib/database";
+import { isPipelineAccount, isQueueAccountForRole } from "@/lib/recordFilters";
+import LoadingSpinner from "@/components/shared/LoadingSpinner";
 
 function isKamTask(record) {
   return [
@@ -19,12 +21,31 @@ function isKamTask(record) {
 export default function KamTasksPage({ session }) {
   const router = useRouter();
   const [records, setRecords] = useState([]);
+  const [filter, setFilter] = useState("tasks");
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchDatabase().then((db) => {
-      setRecords((db.records || []).filter(isKamTask));
+    setLoading(true);
+    const currentFilter = new URLSearchParams(window.location.search).get("filter");
+    const nextFilter = ["pipeline", "queue"].includes(currentFilter) ? currentFilter : "tasks";
+    setFilter(nextFilter);
+
+    fetchServerDatabase().catch(() => fetchDatabase()).then((db) => {
+      const allRecords = db.records || [];
+      const recordFilter =
+        nextFilter === "pipeline"
+          ? isPipelineAccount
+          : nextFilter === "queue"
+            ? (record) => isQueueAccountForRole(record, "KAM")
+            : isKamTask;
+
+      setRecords(allRecords.filter(recordFilter));
+      setLoading(false);
     });
   }, []);
+
+  const isPipelineView = filter === "pipeline";
+  const isQueueView = filter === "queue";
 
   return (
     <main className="portal">
@@ -32,15 +53,25 @@ export default function KamTasksPage({ session }) {
       <section className="portal-content">
         <Topbar session={session} />
         <div className="records-body">
-          <h1>Task Queue &amp; Record</h1>
-          <p>Customer offer delivery, agreement upload, and profile setup tasks.</p>
+          <h1>{isPipelineView ? "Pipeline Accounts" : isQueueView ? "Your Queue" : "Task Queue & Record"}</h1>
+          <p>
+            {isPipelineView
+              ? "Accounts currently moving through approval, offer, agreement, or profile setup."
+              : isQueueView
+                ? "Accounts currently waiting on rate preparation or approval follow-up."
+                : "Customer offer delivery, agreement upload, and profile setup tasks."}
+          </p>
           <div className="records-table-wrap">
             <table className="records-table">
               <thead>
                 <tr><th>Identifier</th><th>Account Name</th><th>Current Status</th><th>Revision</th><th>Action</th></tr>
               </thead>
               <tbody>
-                {records.length ? (
+                {loading ? (
+                  <tr>
+                    <td className="empty-table-cell" colSpan="5"><LoadingSpinner /></td>
+                  </tr>
+                ) : records.length ? (
                   records.map((record) => (
                     <tr key={record.identifier}>
                       <td>{record.identifier}</td>
@@ -52,7 +83,9 @@ export default function KamTasksPage({ session }) {
                   ))
                 ) : (
                   <tr>
-                    <td className="empty-table-cell" colSpan="5">No KAM tasks pending</td>
+                    <td className="empty-table-cell" colSpan="5">
+                      {isPipelineView ? "No pipeline accounts yet" : isQueueView ? "No queue items yet" : "No KAM tasks pending"}
+                    </td>
                   </tr>
                 )}
               </tbody>

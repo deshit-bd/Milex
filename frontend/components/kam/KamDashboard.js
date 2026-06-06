@@ -19,7 +19,7 @@ export default function KamDashboard({ session }) {
             </div>
             <Link className="recommendation-button" href="/kam/recommendations"><FiPlusCircle /> Create New Recommendation</Link>
           </div>
-          <OverviewCards />
+          <OverviewCards session={session} />
           <ActionQueue />
         </div>
       </section>

@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { FiClock } from "react-icons/fi";
 import Swal from "sweetalert2";
 import { fetchDatabase, readRecords } from "@/lib/database";
+import { isQueueAccountForRole } from "@/lib/recordFilters";
+import LoadingSpinner from "@/components/shared/LoadingSpinner";
 
 const SUBMITTED_KEY = "milex.kam.recommendation.submitted";
 const SALES_QUEUE_KEY = "milex.sales.queue";
@@ -12,16 +14,16 @@ const SALES_QUEUE_KEY = "milex.sales.queue";
 export default function SalesQueue() {
   const router = useRouter();
   const [item, setItem] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function loadQueue() {
+      setLoading(true);
       const db = await fetchDatabase();
       const storedQueue = localStorage.getItem(SALES_QUEUE_KEY);
       const submission = localStorage.getItem(SUBMITTED_KEY);
       const records = db.apiError ? readRecords() : db.records || [];
-      const pendingRecord = records.find((record) =>
-        ["PENDING RATE PREPARATION", "REVISION REQUESTED BY LM", "CLIENT FINAL DATA UPDATE", "FINAL PROFILE DATA"].includes(record.status)
-      );
+      const pendingRecord = records.find((record) => isQueueAccountForRole(record, "Sales Coordinator"));
       if (pendingRecord) {
         setItem({
           accountName: pendingRecord.accountName,
@@ -29,10 +31,12 @@ export default function SalesQueue() {
           revision: pendingRecord.revision,
           queueStatus: pendingRecord.status.replaceAll("_", " ").toLowerCase().replace(/\b\w/g, (letter) => letter.toUpperCase()),
         });
+        setLoading(false);
         return;
       }
       if (db.apiError && storedQueue) {
         setItem(JSON.parse(storedQueue));
+        setLoading(false);
         return;
       }
       if (db.apiError && submission) {
@@ -43,6 +47,7 @@ export default function SalesQueue() {
           queueStatus: "Pending Rate Preparation",
         });
       }
+      setLoading(false);
     }
     loadQueue();
   }, []);
@@ -64,9 +69,11 @@ export default function SalesQueue() {
     <section className="queue-card sales-queue">
       <header>
         <div><FiClock /><strong>Action Required Queue</strong></div>
-        <button type="button">View All</button>
+        <button type="button" onClick={() => router.push("/sales/tasks?filter=queue")}>View All</button>
       </header>
-      {item ? (
+      {loading ? (
+        <LoadingSpinner />
+      ) : item ? (
         <article className="sales-queue-item">
           <div>
             <h2>{item.accountName}</h2>

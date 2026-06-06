@@ -1,5 +1,6 @@
-export const DB_KEY = "milex.database.v2";
+export const DB_KEY = "milex.database.v3";
 const API_URL = "/api/database";
+let serverDatabaseRequest = null;
 
 const INITIAL_DB = {
   records: [],
@@ -82,11 +83,11 @@ function getStatusRank(status = "") {
 
 function mergeRecords(serverRecords = [], localRecords = []) {
   const merged = new Map();
-  serverRecords.forEach((record) => merged.set(record.identifier, record));
+  serverRecords.forEach((record) => merged.set(normalizeIdentifier(record.identifier).trim(), record));
   localRecords.forEach((localRecord) => {
-    const serverRecord = merged.get(localRecord.identifier);
-    if (!serverRecord || getStatusRank(localRecord.status) >= getStatusRank(serverRecord.status)) {
-      merged.set(localRecord.identifier, { ...serverRecord, ...localRecord });
+    const identifier = normalizeIdentifier(localRecord.identifier).trim();
+    if (!merged.has(identifier)) {
+      merged.set(identifier, { ...localRecord, identifier });
     }
   });
   return Array.from(merged.values());
@@ -94,10 +95,12 @@ function mergeRecords(serverRecords = [], localRecords = []) {
 
 function mergeCustomers(serverCustomers = [], localCustomers = []) {
   const merged = new Map();
-  serverCustomers.forEach((customer) => merged.set(customer.customerId, customer));
+  serverCustomers.forEach((customer) => merged.set(normalizeIdentifier(customer.customerId).trim(), customer));
   localCustomers.forEach((localCustomer) => {
-    const serverCustomer = merged.get(localCustomer.customerId);
-    merged.set(localCustomer.customerId, { ...serverCustomer, ...localCustomer });
+    const customerId = normalizeIdentifier(localCustomer.customerId).trim();
+    if (!merged.has(customerId)) {
+      merged.set(customerId, { ...localCustomer, customerId });
+    }
   });
   return Array.from(merged.values());
 }
@@ -163,9 +166,7 @@ export function generateCustomerCode() {
 export async function fetchDatabase() {
   try {
     const localDb = readDatabase();
-    const response = await fetch(API_URL, { cache: "no-store" });
-    const result = await response.json();
-    if (!response.ok || !result.ok) throw new Error(result.error || "Database request failed");
+    const result = await requestServerDatabase();
     const nextDb = {
       records: mergeRecords(result.db.records || [], localDb.records || []),
       customers: mergeCustomers(result.db.customers || [], localDb.customers || []),
@@ -177,6 +178,41 @@ export async function fetchDatabase() {
   } catch (error) {
     return { ...readDatabase(), workflow: readDatabase().workflow || {}, apiError: error.message };
   }
+}
+
+export async function fetchServerDatabase() {
+  try {
+    const result = await requestServerDatabase();
+    writeDatabase({
+      records: result.db.records || [],
+      customers: result.db.customers || [],
+      nextCustomerNumber: result.db.nextCustomerNumber || 1,
+      workflow: result.db.workflow || {},
+    });
+    return result.db;
+  } catch (error) {
+    const cachedDb = readDatabase();
+    if ((cachedDb.records || []).length || (cachedDb.customers || []).length) {
+      return { ...cachedDb, apiError: error.message };
+    }
+    throw error;
+  }
+}
+
+async function requestServerDatabase() {
+  if (serverDatabaseRequest) return serverDatabaseRequest;
+
+  serverDatabaseRequest = fetch(API_URL, { cache: "no-store" })
+    .then(async (response) => {
+      const result = await response.json();
+      if (!response.ok || !result.ok) throw new Error(result.error || "Database request failed");
+      return result;
+    })
+    .finally(() => {
+      serverDatabaseRequest = null;
+    });
+
+  return serverDatabaseRequest;
 }
 
 export async function runDatabaseAction(type, payload = {}) {

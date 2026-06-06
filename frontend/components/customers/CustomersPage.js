@@ -7,6 +7,7 @@ import KamSidebar from "@/components/kam/Sidebar";
 import SalesSidebar from "@/components/sales/SalesSidebar";
 import LineManagerSidebar from "@/components/line-manager/LineManagerSidebar";
 import { fetchDatabase, readCustomers } from "@/lib/database";
+import LoadingSpinner from "@/components/shared/LoadingSpinner";
 
 function getSidebar(role) {
   if (role === "KAM") return KamSidebar;
@@ -17,11 +18,14 @@ function getSidebar(role) {
 export default function CustomersPage({ session }) {
   const router = useRouter();
   const [customers, setCustomers] = useState([]);
+  const [loading, setLoading] = useState(true);
   const Sidebar = getSidebar(session.role);
 
   useEffect(() => {
+    setLoading(true);
     fetchDatabase().then((db) => {
       setCustomers(db.apiError ? readCustomers() : db.customers || []);
+      setLoading(false);
     });
   }, []);
 
@@ -50,7 +54,11 @@ export default function CustomersPage({ session }) {
                 <tr><th>Customer ID</th><th>Account Name</th><th>Current Status</th><th>Action</th></tr>
               </thead>
               <tbody>
-                {customers.length ? (
+                {loading ? (
+                  <tr>
+                    <td className="empty-table-cell" colSpan="4"><LoadingSpinner /></td>
+                  </tr>
+                ) : customers.length ? (
                   customers.map((customer) => (
                     <tr key={customer.customerId}>
                       <td>{customer.customerId}</td>

@@ -16,7 +16,7 @@ export default function LineManagerDashboard({ session }) {
               <p>Key Account Performance &amp; Activity</p>
             </div>
           </div>
-          <OverviewCards />
+          <OverviewCards session={session} />
           <LineManagerQueue />
         </div>
       </section>
