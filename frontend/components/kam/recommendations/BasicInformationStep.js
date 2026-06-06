@@ -1,7 +1,9 @@
 import { FiArrowLeft, FiArrowRight, FiUser } from "react-icons/fi";
 import FormField from "./FormField";
 
-export default function BasicInformationStep({ form, onChange, onSave, onNext }) {
+export default function BasicInformationStep({ form, session, onChange, onSave, onNext }) {
+  const handlerEmail = session?.email || session?.name || "KAM";
+
   return (
     <>
       <section className="form-card">
@@ -44,7 +46,7 @@ export default function BasicInformationStep({ form, onChange, onSave, onNext })
             </select>
           </FormField>
           <FormField label="Handled By (KAM)" className="handled-field">
-            <div><FiUser /> Auto-filled: Sarah Jenkins (Senior KAM)</div>
+            <div><FiUser /> Auto-filled: {handlerEmail}</div>
           </FormField>
         </div>
         <div className="form-actions">

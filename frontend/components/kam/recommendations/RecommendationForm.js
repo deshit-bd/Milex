@@ -11,6 +11,7 @@ import RecommendationDetailsStep from "./RecommendationDetailsStep";
 import { DRAFT_KEY, INITIAL_FORM } from "./recommendationData";
 import { createCustomerCode, createCustomerCodeFromServer } from "@/lib/workflow";
 import { runDatabaseAction } from "@/lib/database";
+import { getCurrentSession } from "@/lib/auth";
 
 function normalizeCustomerCode(identifier) {
   return identifier ? identifier.replace(/^MLX-/, "MLX") : "";
@@ -19,8 +20,10 @@ function normalizeCustomerCode(identifier) {
 export default function RecommendationForm({ onCustomerCodeChange }) {
   const [form, setForm] = useState(INITIAL_FORM);
   const [currentStep, setCurrentStep] = useState(1);
+  const [session, setSession] = useState(null);
 
   useEffect(() => {
+    setSession(getCurrentSession());
     const draft = localStorage.getItem(DRAFT_KEY);
     const parsedDraft = draft ? JSON.parse(draft) : {};
     const draftForm = parsedDraft.form || parsedDraft;
@@ -110,7 +113,7 @@ export default function RecommendationForm({ onCustomerCodeChange }) {
         <h1>New Recommendation Form</h1>
         <StepProgress currentStep={currentStep} />
       </section>
-      {currentStep === 1 && <BasicInformationStep form={form} onChange={updateForm} onSave={saveDraft} onNext={nextStep} />}
+      {currentStep === 1 && <BasicInformationStep form={form} session={session} onChange={updateForm} onSave={saveDraft} onNext={nextStep} />}
       {currentStep === 2 && <FinancialTermsStep form={form} onChange={updateForm} onSave={saveDraft} onNext={nextStep} onPrevious={() => { persist(1); setCurrentStep(1); }} />}
       {currentStep === 3 && <ContactPersonsStep form={form} onChange={updateForm} onSave={saveDraft} onNext={nextStep} onPrevious={() => { persist(2); setCurrentStep(2); }} />}
       {currentStep === 4 && <ShippingDetailsStep form={form} onChange={updateForm} onSave={saveDraft} onNext={nextStep} onPrevious={() => { persist(3); setCurrentStep(3); }} />}
