@@ -3,9 +3,9 @@ import { ensureDatabase } from "./database";
 export const STORAGE_KEY = "milex.session";
 
 export const DEMO_USERS = [
-  { role: "KAM", email: "kam@milex.com", password: "123456" },
-  { role: "Sales Coordinator", email: "sales@milex.com", password: "123456" },
-  { role: "Line Manager", email: "manager@milex.com", password: "123456" },
+  { name: "Md. Rahim", title: "KAM", role: "KAM", email: "kam@milex.com", password: "123456" },
+  { name: "Nusrat Jahan", title: "Sales Coordinator", role: "Sales Coordinator", email: "sales@milex.com", password: "123456" },
+  { name: "Tanvir Ahmed", title: "Line Manager", role: "Line Manager", email: "manager@milex.com", password: "123456" },
 ];
 
 export function getRoleRoute(session) {
@@ -39,7 +39,12 @@ export function authenticate(credentials) {
 
   if (!user) return null;
 
-  const session = { role: user.role, email: user.email };
+  const session = {
+    name: user.name,
+    title: user.title,
+    role: user.role,
+    email: user.email,
+  };
   localStorage.setItem(STORAGE_KEY, JSON.stringify(session));
   return session;
 }

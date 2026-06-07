@@ -172,7 +172,7 @@ export async function POST(request) {
     }
 
     if (type === "resetDatabase") {
-      return json({ ok: true, db: await resetSheetDatabase() });
+      return json({ ok: true, db: setCachedDb(await resetSheetDatabase()) });
     }
 
     if (type === "writeWorkflowItem") {
@@ -191,11 +191,13 @@ export async function POST(request) {
       const existing = db.records.find((item) => item.identifier === payload.record.identifier);
       const record = { revision: "New", tone: "info", ...existing, ...payload.record };
       await upsertSheetRecord(record);
+      globalThis.__milexSheetDbCache = null;
       return json({ ok: true, record });
     }
 
     if (type === "deleteRecord") {
       await deleteSheetRecord(payload.identifier);
+      globalThis.__milexSheetDbCache = null;
       return json({ ok: true });
     }
 
@@ -213,6 +215,7 @@ export async function POST(request) {
         tone: payload.tone || "info",
       };
       await upsertSheetRecord(record);
+      globalThis.__milexSheetDbCache = null;
       return json({ ok: true, record });
     }
 
@@ -237,6 +240,7 @@ export async function POST(request) {
         rateForwardedAt: new Date().toISOString(),
       };
       await upsertSheetRecord(record);
+      globalThis.__milexSheetDbCache = null;
       return json({ ok: true, record });
     }
 
@@ -245,6 +249,7 @@ export async function POST(request) {
       const existing = db.customers.find((item) => item.customerId === payload.customer.customerId);
       const customer = { status: "ACTIVE & DISTRIBUTED", ...existing, ...payload.customer };
       await upsertSheetCustomer(customer);
+      globalThis.__milexSheetDbCache = null;
       return json({ ok: true, customer });
     }
 
@@ -266,6 +271,7 @@ export async function POST(request) {
         revisionNote: "",
       };
       await upsertSheetRecord(record);
+      globalThis.__milexSheetDbCache = null;
       return json({ ok: true, record });
     }
 

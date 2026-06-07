@@ -15,6 +15,13 @@ function getNavItems(role) {
   return SALES_NAV_ITEMS;
 }
 
+function getDisplayName(role) {
+  if (role === "KAM") return "Key Account Manager";
+  if (role === "Sales Coordinator") return "Sales Coordinator";
+  if (role === "Line Manager") return "Line Manager";
+  return role;
+}
+
 export default function Topbar({ session }) {
   const [profileOpen, setProfileOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -23,6 +30,14 @@ export default function Topbar({ session }) {
   const searchParams = useSearchParams();
   const isPipelineView = searchParams.get("filter") === "pipeline";
   const navItems = getNavItems(session.role);
+  const displayName = getDisplayName(session.role);
+  const initials = displayName
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((part) => part[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
 
   function isNavActive(href) {
     return pathname === href && !(isPipelineView && href.endsWith("/tasks"));
@@ -67,14 +82,16 @@ export default function Topbar({ session }) {
         </div>
       </div>
       <div className="topbar-actions">
-        <button type="button" aria-label="Help"><FiHelpCircle /></button>
+        <span className={`topbar-user-name role-${session.role.toLowerCase().replace(/\s+/g, "-")}`}>{displayName}</span>
+        <button className="topbar-secondary-action" type="button" aria-label="Help"><FiHelpCircle /></button>
         <button type="button" aria-label="Notifications"><FiBell /><i /></button>
-        <button type="button" aria-label="Settings"><FiSettings /></button>
+        <button className="topbar-secondary-action" type="button" aria-label="Settings"><FiSettings /></button>
         <div className="profile-wrap" ref={profileRef}>
-          <button className="avatar-button" type="button" aria-label="Open profile menu" onClick={() => setProfileOpen((open) => !open)}>KH</button>
+          <button className="avatar-button" type="button" aria-label="Open profile menu" onClick={() => setProfileOpen((open) => !open)}>{initials}</button>
           {profileOpen && (
             <div className="profile-menu">
-              <strong>{session.role}</strong>
+              <strong>{displayName}</strong>
+              <span>{session.title || session.role}</span>
               <small>{session.email}</small>
               <button type="button" onClick={logout}><FiLogOut /> Sign Out</button>
             </div>

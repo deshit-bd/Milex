@@ -165,11 +165,10 @@ export function generateCustomerCode() {
 
 export async function fetchDatabase() {
   try {
-    const localDb = readDatabase();
     const result = await requestServerDatabase();
     const nextDb = {
-      records: mergeRecords(result.db.records || [], localDb.records || []),
-      customers: mergeCustomers(result.db.customers || [], localDb.customers || []),
+      records: result.db.records || [],
+      customers: result.db.customers || [],
       nextCustomerNumber: result.db.nextCustomerNumber || 1,
       workflow: result.db.workflow || {},
     };

@@ -7,7 +7,7 @@ function ContactFields({ prefix, form, onChange, requiredMobile = false }) {
       <FormField label="Name" name={`${prefix}Name`} required={requiredMobile} placeholder={prefix === "senior" ? "Full Legal Name" : prefix === "key" ? "Full Legal Name" : "Finance Lead Name"} value={form[`${prefix}Name`]} onChange={onChange} />
       <FormField label="Designation (Optional)" name={`${prefix}Designation`} placeholder={prefix === "senior" ? "e.g. General Manager" : prefix === "key" ? "e.g. Operations Manager" : "e.g. CFO / Accounts Payable"} value={form[`${prefix}Designation`]} onChange={onChange} />
       <FormField label={`Mobile${requiredMobile ? "" : " (Optional)"}`} name={`${prefix}Mobile`} required={requiredMobile} placeholder="+1 (555) 000-0000" value={form[`${prefix}Mobile`]} onChange={onChange} />
-      <FormField label="Email (Optional)" name={`${prefix}Email`} type="email" placeholder={prefix === "financial" ? "billing@company.com" : "contact@company.com"} value={form[`${prefix}Email`]} onChange={onChange} />
+      <FormField label="Email" name={`${prefix}Email`} required type="email" placeholder={prefix === "financial" ? "billing@company.com" : "contact@company.com"} value={form[`${prefix}Email`]} onChange={onChange} />
     </div>
   );
 }

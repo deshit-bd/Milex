@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { FiTag } from "react-icons/fi";
+import { FiCheckCircle, FiTag } from "react-icons/fi";
 import Sidebar from "@/components/kam/Sidebar";
 import Topbar from "@/components/kam/Topbar";
 import AccountInfo from "@/components/sales/record/AccountInfo";
@@ -52,9 +52,32 @@ function getStatus(stage, status) {
   return status || "OFFER DELIVERED (PENDING AGREEMENT)";
 }
 
+function getPipelineMessage(status) {
+  const messages = {
+    "PENDING RATE PREPARATION": "Recommendation submitted to Sales Coordinator",
+    "PENDING LM APPROVAL": "Rate submitted to Line Manager for approval",
+    "PENDING RATE APPROVAL": "Rate submitted to Line Manager for approval",
+    "REVISION REQUESTED BY LM": "Line Manager requested a rate revision from Sales Coordinator",
+    "APPROVED (PENDING OFFER LETTER)": "Rate approved. Sales Coordinator is preparing the offer letter",
+    "OFFER REJECTED (REVISION REQUIRED)": "Customer rejected the offer. Sales Coordinator must revise it",
+  };
+
+  return messages[status] || "This account is moving through the approval workflow";
+}
+
 export default function KamAgreementPage({ session, recordId }) {
   const [record, setRecord] = useState(SAMPLE_RECORD_DETAIL);
   const [finalizationStage, setFinalizationStage] = useState("");
+  const agreementAvailable =
+    Boolean(record.finalization) ||
+    [
+      "OFFER DELIVERED (PENDING AGREEMENT)",
+      "CLIENT ACCEPTED OFFER (PENDING AGREEMENT)",
+      "PENDING_PROFILE",
+      "FINAL PROFILE DATA",
+      "CLIENT FINAL DATA UPDATE",
+      "ACTIVE & DISTRIBUTED",
+    ].includes(record.status);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -87,7 +110,7 @@ export default function KamAgreementPage({ session, recordId }) {
           <div className="record-layout">
             <div>
               <AccountInfo record={record} />
-              {finalizationStage !== "client-decision" && (
+              {agreementAvailable && finalizationStage !== "client-decision" && (
                 <ClientFinalizationPanel
                   record={record}
                   onStageChange={setFinalizationStage}
@@ -96,13 +119,19 @@ export default function KamAgreementPage({ session, recordId }) {
               )}
             </div>
             <aside>
-              {finalizationStage === "client-decision" && (
+              {agreementAvailable && finalizationStage === "client-decision" ? (
                 <ClientFinalizationPanel
                   record={record}
                   onStageChange={setFinalizationStage}
                   onFinalizationChange={handleFinalizationChange}
                 />
-              )}
+              ) : !agreementAvailable ? (
+                <section className="rate-action-box forwarded-status-box">
+                  <div className="forwarded-status-icon"><FiCheckCircle /></div>
+                  <h2>{record.status || "PENDING RATE PREPARATION"}</h2>
+                  <p>{getPipelineMessage(record.status || "PENDING RATE PREPARATION")}</p>
+                </section>
+              ) : null}
               <AuditTrail
                 approved
                 rateForwarded

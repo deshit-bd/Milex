@@ -378,6 +378,34 @@ input::placeholder {
   gap: 15px;
 }
 
+.topbar-user-name {
+  max-width: 170px;
+  overflow: hidden;
+  padding: 5px 11px;
+  border: 1px solid #9edbd2;
+  border-radius: 999px;
+  background:
+    linear-gradient(#f5fffc, #f5fffc) padding-box,
+    linear-gradient(135deg, #08a565, #1677d2) border-box;
+  color: #087a65;
+  font-size: 12px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@supports ((background-clip: text) or (-webkit-background-clip: text)) {
+  .topbar-user-name {
+    background:
+      linear-gradient(135deg, #078b4d, #126bc5) text,
+      linear-gradient(#f5fffc, #f5fffc) padding-box,
+      linear-gradient(135deg, #08a565, #1677d2) border-box;
+    color: transparent;
+    -webkit-background-clip: text, padding-box, border-box;
+    background-clip: text, padding-box, border-box;
+  }
+}
+
 .topbar-actions > button {
   position: relative;
   padding: 0;
@@ -466,6 +494,7 @@ input::placeholder {
 }
 
 .profile-menu strong,
+.profile-menu span,
 .profile-menu small {
   display: block;
 }
@@ -478,6 +507,12 @@ input::placeholder {
   margin-top: 3px;
   color: #718094;
   font-size: 11px;
+}
+
+.profile-menu span {
+  margin-top: 2px;
+  color: #52647b;
+  font-size: 10px;
 }
 
 .profile-menu button {
@@ -2842,8 +2877,13 @@ input::placeholder {
     margin-left: 12px;
   }
 
-  .topbar-actions > button:nth-child(1),
-  .topbar-actions > button:nth-child(3) {
+  .topbar-user-name {
+    max-width: 90px;
+    padding: 4px 7px;
+    font-size: 10px;
+  }
+
+  .topbar-secondary-action {
     display: none;
   }
 
